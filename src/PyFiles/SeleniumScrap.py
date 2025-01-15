@@ -44,7 +44,7 @@ driver = webdriver.Chrome(service=chrome_service, options=options)
 def find_emails_on_facebook(company_name):
     try:
         # Google-søk etter firma på Facebook
-        search_url = f"https://www.google.com/search?q=site:facebook.com+{company_name}&hl=no&gl=no&cr=countryNO"
+        search_url = f"https://www.google.com/search?q=site:facebook.com+OR+site:1881.no+{company_name}&hl=no&gl=no&cr=countryNO"
         
         driver.get(search_url)
         # Vent på at søkeresultater skal laste inn

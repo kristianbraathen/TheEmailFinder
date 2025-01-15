@@ -7,6 +7,7 @@ from BrregUpdate import api2_blueprint
 from KseApi import api3_blueprint
 from SeleniumScrap import api4_blueprint
 from ExcelHandler import upload_blueprint
+from Kseapi1881 import api5_blueprint
 import urllib.parse
 import os
 
@@ -47,6 +48,7 @@ app.register_blueprint(api1_blueprint, url_prefix="/brregEmails")
 app.register_blueprint(api2_blueprint, url_prefix="/BrregUpdate")
 app.register_blueprint(api3_blueprint, url_prefix="/KseApi")
 app.register_blueprint(api4_blueprint, url_prefix="/SeleniumScrap")
+app.register_blueprint(api5_blueprint, url_prefix="/Kseapi1881")
 app.register_blueprint(upload_blueprint, url_prefix="/ExcelHandler")
 
 @app.route("/")

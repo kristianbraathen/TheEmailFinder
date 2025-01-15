@@ -9,9 +9,8 @@ import re
 from urllib.parse import unquote
 from threading import Lock
 
-
 # Flask-app
-api3_blueprint = Blueprint('api3', __name__)
+api5_blueprint = Blueprint('api5', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
@@ -32,8 +31,8 @@ connection_string = (
 )
 
 # Google Custom Search API-konfigurasjon
-API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
-CSE_ID = "05572ab81b7254d58"
+API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
+CSE_ID = "432c6f0a821194e10"
 
 # Funksjon for å gjøre et søk via Google Custom Search API
 def google_custom_search(query):
@@ -83,8 +82,8 @@ def search_emails_and_display():
                 org_nr, company_name = row
 
                 # Google Custom Search med firmanavn og Norge
-                search_query = f'"{company_name}" "Norge" -groups -posts -photos -photo -videos -type=3'
-                print(f"Søker med query: {search_query}")
+                search_query = f'"{company_name}" "Norge" '
+                print(f"Søker med query:{search_query}")
                 
                 search_results = google_custom_search(search_query)
                 all_emails = []
@@ -113,8 +112,8 @@ def search_emails_and_display():
         return []
 
 # Flask-endepunkt for å søke etter e-poster
-@api3_blueprint.route('/search_emails', methods=['GET'])
-def search_emails_endpoint():
+@api5_blueprint.route('/search_emails', methods=['GET'])
+def search_emails_endpoint_1881():
     global process_running
     if not process_running:  # Kontroller før du setter prosessen som kjørende
         return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
@@ -126,8 +125,8 @@ def search_emails_endpoint():
     except Exception as e:
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
 
-@api3_blueprint.route('/start_process', methods=['POST'])
-def start_process():
+@api5_blueprint.route('/start_process', methods=['POST'])
+def start_process_1881():
     global process_running
     with process_lock:  # Sikrer trådtrygg tilgang
         if process_running:
@@ -140,8 +139,8 @@ def start_process():
             process_running = False
             return jsonify({"status": f"Error starting process: {str(e)}"}), 500
 
-@api3_blueprint.route('/stop_process', methods=['POST'])
-def stop_process():
+@api5_blueprint.route('/stop_process', methods=['POST'])
+def stop_process_1881():
     global process_running
     with process_lock:
         if not process_running:

@@ -4,12 +4,19 @@
 
         <!-- Knapp for å starte oppdatering -->
         <button @click="processAndCleanOrganizations">Start oppdatering fra Brønnøysund</button>
-        <button @click="googleCustomSearch">Facebook Scrap</button>
-
+        <button @click="openPopup">Facebook Scrap</button>
+        <button @click="openPopup2">1881 Scrap</button>
+        <!-- KSEPopUP popup -->
+        <KSEPopUP :isVisible="showPopup1"
+                  :companies="companies"
+                  @close="closePopup" />
+        <!-- Kse1881PopUP popup -->
+        <Kse1881PopUP :isVisible="showPopup2"
+                      :companies="companies"
+                      @close="closePopup2" />
         <!-- Manuelt søk -->
         <div>
-            <input v-model="search_by_company_name"
-                   placeholder="Søk etter bedrifter" />
+            <input v-model="search_by_company_name" placeholder="Søk etter bedrifter" />
             <button @click="manualSearch">Søk</button>
         </div>
 
@@ -24,25 +31,36 @@
             <h2>Søkeresultater</h2>
             <pre>{{ searchResults }}</pre>
         </div>
+
+        <!-- Drag-and-drop komponent -->
         <DragnDropComponent></DragnDropComponent>
+
+
     </div>
 </template>
-
 
 <script>
     import axios from "axios";
     import DragnDropComponent from "./DragnDropComponent.vue";
+    import KSEPopUP from "./KSEPopUP.vue";  // Importere KSEPopUP-komponenten
+    import Kse1881PopUP from "./Kse1881PopUP.vue";  // Importere Kse1881PopUP-komponenten
+
     export default {
         data() {
             return {
                 status: null, // Status for API-respons
-                searchOrgNr: "", // For manuelt søk
+                search_by_company_name: "", // For manuelt søk
                 searchResults: null, // Resultater fra manuelt søk
                 isUpdating: false, // For å deaktivere knappen under prosessering
+                showPopup1: false,
+                showPopup2: false,// Tilstand for å vise popup
+                companies: [], // Selskapsdata for popup
             };
         },
         components: {
-            DragnDropComponent
+            DragnDropComponent,
+            KSEPopUP,
+            Kse1881PopUP,
         },
         methods: {
             async processAndCleanOrganizations() {
@@ -81,17 +99,18 @@
                     this.status = "Feil ved manuell søk.";
                     this.searchResults = null;
                 }
+            },           
+            openPopup() {
+                this.showPopup1 = true;
             },
-            async googleCustomSearch() {
-                try {
-                    const response = await axios.post(
-                        `http://localhost:5000/KseApi/update_emails`
-                    );
-                    this.status = response.data.status;
-                } catch (error) {
-                    console.error("Feil ved Google-søk:", error);
-                    this.status = "Feil ved Google-søk.";
-                }
+            openPopup2() {
+                this.showPopup2= true;
+            },
+            closePopup() {
+                this.showPopup1 = false; // Skjul popup når den lukkes
+            },
+            closePopup2() {
+                this.showPopup2 = false; // Skjul popup når den lukkes
             },
         },
     };
