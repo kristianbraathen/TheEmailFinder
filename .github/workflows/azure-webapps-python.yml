@@ -22,6 +22,7 @@ name: Build and deploy Python app to Azure Web App
 env:
   AZURE_WEBAPP_NAME: 'EmailFinder'  # set this to the name of your Azure Web App
   PYTHON_VERSION: '3.9'              # set this to the Python version to use
+  AZURE_WEBAPP_PACKAGE_PATH: 'src/PyFiles'  # Adjust this if your code is inside this directory
 
 on:
   push:
@@ -50,7 +51,7 @@ jobs:
           source venv/bin/activate
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt  # Adjusted to use correct path
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
@@ -82,5 +83,5 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.EmailFinder }}
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}  # Corrected reference to AZURE_WEBAPP_NAME
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4A5B3316A81B4A24981ECB1AECCEF612 }}
