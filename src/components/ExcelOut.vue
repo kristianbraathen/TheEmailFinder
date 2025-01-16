@@ -9,7 +9,7 @@ export default {
   methods: {
     async downloadExcel() {
       try {
-        const response = await fetch("http://localhost:5000/DbToExcel/export_to_excel");
+          const response = await fetch("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/DbToExcel/export_to_excel");
         if (!response.ok) {
           throw new Error("Feil under nedlasting.");
         }

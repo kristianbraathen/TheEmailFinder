@@ -1,31 +1,20 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from Db import db  # Import the db object from db.py
-from brregEmails import api1_blueprint
-from BrregUpdate import api2_blueprint
-from KseApi import api3_blueprint
-from SeleniumScrap import api4_blueprint
-from ExcelHandler import upload_blueprint
-from Kseapi1881 import api5_blueprint
-from DbToExcel import download_blueprint
-import urllib.parse
 import os
+import urllib.parse
 
 app = Flask(__name__)
 
 # CORS Configuration
-CORS(app, origins=["http://localhost:8080"])
+CORS(app, origins=["http://localhost:8080, http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net"])
 
-# Database Configuration
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=(localdb)\\MSSQLLocalDB;"
-    "DATABASE=master;"
-    "Trusted_Connection=yes;"
-)
-params = urllib.parse.quote_plus(connection_string)
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mssql+pyodbc:///?odbc_connect={params}"
+# Database Configuration (For PostgreSQL)
+# Get the connection string from the environment variable
+connection_string = os.getenv("AZURE_POSTGRESQL_CONNECTIONSTRING")  # The Azure PostgreSQL connection string
+
+# Set up SQLAlchemy database URI
+app.config['SQLALCHEMY_DATABASE_URI'] = connection_string
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # For 16MB limit
 

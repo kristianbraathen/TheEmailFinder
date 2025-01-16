@@ -2,16 +2,11 @@ import requests
 from datetime import datetime, timedelta
 import pyodbc
 from flask import Flask, jsonify, Blueprint
-
+from Db import db
 api2_blueprint = Blueprint('api2', __name__)
 
 # SQL Server-tilkobling
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=(localdb)\\MSSQLLocalDB;"
-    "DATABASE=master;"
-    "Trusted_Connection=yes;"
-)
+
 
 def process_organization_with_single_call(org_nr):
     """

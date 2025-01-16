@@ -8,7 +8,7 @@ from flask import Flask, jsonify, Blueprint, request
 import re
 from urllib.parse import unquote
 from threading import Lock
-
+from Db import db
 
 # Flask-app
 api3_blueprint = Blueprint('api3', __name__)
@@ -24,12 +24,7 @@ chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
 
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=(localdb)\\MSSQLLocalDB;"
-    "DATABASE=master;"
-    "Trusted_Connection=yes;"
-)
+
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"

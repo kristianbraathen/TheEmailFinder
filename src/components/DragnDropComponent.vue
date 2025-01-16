@@ -55,7 +55,7 @@
 
                 try {
                     const response = await axios.post(
-                        "http://localhost:5000/ExcelHandler/upload-excel",
+                        "http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/ExcelHandler/upload-excel",
                         formData,
                         {
                             headers: { "Content-Type": "multipart/form-data" },

@@ -26,12 +26,7 @@ chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
 
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=(localdb)\\MSSQLLocalDB;"
-    "DATABASE=master;"
-    "Trusted_Connection=yes;"
-)
+
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
