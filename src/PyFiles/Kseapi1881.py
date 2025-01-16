@@ -5,9 +5,12 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from flask import Flask, jsonify, Blueprint, request
+from Db import db
 import re
 from urllib.parse import unquote
 from threading import Lock
+from sqlalchemy.sql import text
+
 
 # Flask-app
 api5_blueprint = Blueprint('api5', __name__)
@@ -123,6 +126,27 @@ def search_emails_endpoint_1881():
         results = search_emails_and_display()
         return jsonify(results), 200
     except Exception as e:
+        return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
+
+@api5_blueprint.route("/update_email", methods=["POST"])
+def update_email():
+    data = request.get_json()
+    org_nr = data.get("org_nr")
+    email = data.get("email")
+
+    if not org_nr or not email:
+        return jsonify({"error": "Missing org_nr or email"}), 400
+
+    try:
+        query = text(
+            "UPDATE [dbo].[imported_table] SET [E-post 1] = :email WHERE [Org.nr] = :org_nr"
+        )
+        db.session.execute(query, {"email": email, "org_nr": org_nr})
+        db.session.commit()
+
+        return jsonify({"status": "E-post oppdatert!"}), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
 
 @api5_blueprint.route('/start_process', methods=['POST'])

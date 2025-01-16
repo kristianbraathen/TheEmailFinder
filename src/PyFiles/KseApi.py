@@ -125,6 +125,26 @@ def search_emails_endpoint():
         return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
+@api3_blueprint.route("/update_email", methods=["POST"])
+def update_email():
+    try:
+        # Parse the request JSON
+        data = request.get_json()
+        org_nr = data.get("org_nr")
+        email = data.get("email")
+
+        if not org_nr or not email:
+            return jsonify({"error": "Org.nr and email are required."}), 400
+
+        # Perform the update in the database
+        query = f"UPDATE [dbo].[imported_table] SET [e_post 1] = :email WHERE [Org.nr] = :org_nr"
+        db.session.execute(query, {"email": email, "org_nr": org_nr})
+        db.session.commit()
+
+        return jsonify({"status": "E-post oppdatert!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
 
 @api3_blueprint.route('/start_process', methods=['POST'])
 def start_process():

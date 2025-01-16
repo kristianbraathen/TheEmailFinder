@@ -34,7 +34,7 @@
 
         <!-- Drag-and-drop komponent -->
         <DragnDropComponent></DragnDropComponent>
-
+        <ExcelOut></ExcelOut>
 
     </div>
 </template>
@@ -44,6 +44,7 @@
     import DragnDropComponent from "./DragnDropComponent.vue";
     import KSEPopUP from "./KSEPopUP.vue";  // Importere KSEPopUP-komponenten
     import Kse1881PopUP from "./Kse1881PopUP.vue";  // Importere Kse1881PopUP-komponenten
+    import ExcelOut from "./ExcelOut.vue";  // Importere ExcelOut-komponenten
 
     export default {
         data() {
@@ -61,6 +62,7 @@
             DragnDropComponent,
             KSEPopUP,
             Kse1881PopUP,
+            ExcelOut,
         },
         methods: {
             async processAndCleanOrganizations() {

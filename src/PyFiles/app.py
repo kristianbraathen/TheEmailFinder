@@ -8,6 +8,7 @@ from KseApi import api3_blueprint
 from SeleniumScrap import api4_blueprint
 from ExcelHandler import upload_blueprint
 from Kseapi1881 import api5_blueprint
+from DbToExcel import download_blueprint
 import urllib.parse
 import os
 
@@ -50,6 +51,7 @@ app.register_blueprint(api3_blueprint, url_prefix="/KseApi")
 app.register_blueprint(api4_blueprint, url_prefix="/SeleniumScrap")
 app.register_blueprint(api5_blueprint, url_prefix="/Kseapi1881")
 app.register_blueprint(upload_blueprint, url_prefix="/ExcelHandler")
+app.register_blueprint(download_blueprint, url_prefix="/DbToExcel")
 
 @app.route("/")
 def home():
