@@ -3,7 +3,8 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import urllib.parse
-from .Db import db
+from PyFiles.Db import db
+
 
 
 
