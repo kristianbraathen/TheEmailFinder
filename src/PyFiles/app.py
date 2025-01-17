@@ -5,7 +5,7 @@ import os
 import urllib.parse
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from .Db import db
+from Db import db
 
 
 
