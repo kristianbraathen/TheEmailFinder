@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import urllib.parse
+import Db from db
 
 app = Flask(__name__)
 
