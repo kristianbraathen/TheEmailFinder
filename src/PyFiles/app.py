@@ -6,7 +6,7 @@ import urllib.parse
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from Db import db
-
+from sqlalchemy import create_engine
 
 
 
@@ -17,8 +17,15 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:8080, http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net"])
 
 # Database Configuration (For PostgreSQL)
-# Get the connection string from the environment variable
-connection_string = os.getenv("AZURE_POSTGRESQL_CONNECTIONSTRING")  # The Azure PostgreSQL connection string
+   
+  
+
+   # Retrieve the connection string from the environment variable
+connection_string = os.getenv("AZURE_POSTGRESQL_CONNECTIONSTRING")
+
+# Create an SQLAlchemy engine
+engine = create_engine(connection_string)
+
 
 # Set up SQLAlchemy database URI
 app.config['SQLALCHEMY_DATABASE_URI'] = connection_string
