@@ -23,7 +23,7 @@ env:
   AZURE_WEBAPP_NAME: 'EmailFinder'  # set this to the name of your Azure Web App
   PYTHON_VERSION: '3.9'              # set this to the Python version to use
   AZURE_WEBAPP_PACKAGE_PATH: 'src/PyFiles'  # Adjust this if your code is inside this directory
-
+  AZURE_POSTGRESQL_CONNECTIONSTRING: "postgresql://vokzkzkv:5ufJP$SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require"
 on:
   push:
     branches: [ "master" ]
