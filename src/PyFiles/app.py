@@ -3,7 +3,10 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import urllib.parse
-from PyFiles.Db import db
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from .Db import db
+
 
 
 
