@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import urllib.parse
-from db import Db
+from PyFiles.Db import Db
 
 
 app = Flask(__name__)
@@ -56,4 +56,5 @@ def health_check():
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="0.0.0.0", port=8000)
+
