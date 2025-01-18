@@ -4,7 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 import urllib.parse
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from Db import db
 
 
@@ -21,11 +20,13 @@ CORS(app, origins=["http://localhost:8080, http://emailfinder-h0g7f5hpa4eggcbb.n
   
 
    # Retrieve the connection string from the environment variable
-connection_string = os.getenv("AZURE_POSTGRESQL_CONNECTIONSTRING")
+database_url = os.getenv('DATABASE_URL') or os.getenv('AZURE_POSTGRESQL_CONNECTIONSTRING')
 
+if not database_url:
+    raise ValueError("No database URL provided in environment variables.")
 
-# Set up SQLAlchemy database URI
-app.config['SQLALCHEMY_DATABASE_URI'] = connection_string
+# Configure the database
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # For 16MB limit
 
