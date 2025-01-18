@@ -5,10 +5,13 @@ import os
 import urllib.parse
 import sys
 from Db import db
-
-
-
-
+from brregEmails import api1_blueprint
+from BrregUpdate import api2_blueprint
+from KseApi import api3_blueprint
+from SeleniumScrap import api4_blueprint
+from Kseapi1881 import api5_blueprint
+from ExcelHandler import upload_blueprint
+from DbToExcel import download_blueprint
 
 app = Flask(__name__)
 
