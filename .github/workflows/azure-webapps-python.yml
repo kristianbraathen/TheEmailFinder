@@ -24,7 +24,8 @@ env:
   PYTHON_VERSION: '3.9'              # set this to the Python version to use
   AZURE_WEBAPP_PACKAGE_PATH: 'src/PyFiles'  # Adjust this if your code is inside this directory
   AZURE_POSTGRESQL_CONNECTIONSTRING: 'postgresql+psycopg2://vokzkzkzkv:5ufJP%24SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require'
-  DATABASE_URL: 'postgresql+psycopg2://vokzkzkzkv:5ufJP%24SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require'
+  DATABASE_URL: 'postgresql+psycopg2://vokzkzkvk:5ufJP%24SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require'
+
 on:
   push:
     branches: [ "master" ]
@@ -53,19 +54,22 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt  # Adjusted to use correct path
+
+      - name: Verify chromedriver installation
+        run: |
+          source venv/bin/activate
+          python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
       
       - name: List files in the repository
         run: ls -R
 
       - name: Build Docker image
         run: |
-          docker build  --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
+          docker build --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
 
       - name: Run the Flask app (optional, for testing)
         run: |
           docker run -d -p 8000:8000 emailfinder:latest
-
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v3
