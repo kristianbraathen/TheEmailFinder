@@ -4,14 +4,44 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install dependencies for Chrome and ChromeDriver
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    libx11-dev \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgl1-mesa-glx \
+    libgtk-3-0 \
+    libnss3 \
+    libasound2 \
+    libxtst6 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libappindicator3-1 \
+    libgdk-pixbuf2.0-0 \
+    libgbm1 \
+    xdg-utils \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Google Chrome
+RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb \
+    && apt-get install -y -f \
+    && rm google-chrome-stable_current_amd64.deb
+
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
-COPY requirements.txt .
+COPY src/PyFiles/requirements.txt .
 
 # Install the dependencies inside the container
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the app.py file from the current directory (src/PyFiles) into the container's /app directory
-COPY app.py .
+COPY src/PyFiles/app.py .
 
 # Expose the port that Flask will run on
 EXPOSE 8000
