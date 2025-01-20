@@ -48,7 +48,7 @@ RUN which google-chrome-stable && google-chrome-stable --version
 
 # Installer Python-avhengigheter
 WORKDIR /app
-COPY requirements.txt /app/
+COPY src/PyFiles/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Debug Chromedriver-autoinstaller
