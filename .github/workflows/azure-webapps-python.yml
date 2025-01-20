@@ -53,7 +53,10 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt  # Adjusted to use correct path
-     
+      
+      - name: List files in the repository
+        run: ls -R
+
       - name: Build Docker image
         run: |
           docker build -t emailfinder:latest -f src/PyFiles/DockerFile .
