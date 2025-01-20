@@ -53,6 +53,14 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt  # Adjusted to use correct path
+     
+      - name: Build Docker image
+        run: |
+          docker build -t emailfinder:latest -f src/PyFiles/DockerFile .
+
+      - name: Run the Flask app (optional, for testing)
+        run: |
+          docker run -d -p 8000:8000 emailfinder:latest
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
