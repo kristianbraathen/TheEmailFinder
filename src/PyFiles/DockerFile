@@ -35,8 +35,6 @@ RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_am
     && apt-get install -y -f \
     && rm google-chrome-stable_current_amd64.deb
 
-# Install ChromeDriver
-RUN apt-get install -y chromium-driver
 
 # Debug the Chrome and Chromedriver installation paths
 RUN which google-chrome-stable
