@@ -26,8 +26,7 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     xdg-utils \
     fonts-liberation \
-    libvulkan1 \   # Add this line to install the missing dependency
-    && rm -rf /var/lib/apt/lists/*
+    libvulkan1 && rm -rf /var/lib/apt/lists/*  # Comment should be removed or placed on a separate line
 
 # Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
