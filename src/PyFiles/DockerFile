@@ -43,9 +43,6 @@ RUN which chromedriver
 # Set the correct PATH for Google Chrome
 ENV PATH=$PATH:/usr/bin/google-chrome-stable:/usr/lib/chromium-browser/
 
-# Ensure chromedriver is installed correctly
-RUN chromedriver --version
-
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
 
