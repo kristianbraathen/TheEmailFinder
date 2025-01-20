@@ -42,6 +42,9 @@ RUN which google-chrome-stable
 # Set the correct PATH for Google Chrome
 ENV PATH=$PATH:/usr/bin/google-chrome-stable:/usr/lib/chromium-browser/
 
+# Add the following line to install libpq-dev
+RUN apt-get update && apt-get install -y libpq-dev
+
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
 
