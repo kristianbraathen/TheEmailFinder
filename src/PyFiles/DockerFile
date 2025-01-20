@@ -43,10 +43,9 @@ RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_am
 # Add Google Chrome to PATH
 ENV PATH=$PATH:/usr/bin
 ENV CHROME_BIN=/usr/bin/google-chrome
-ENV CHROMEDRIVER_AUTO_INSTALL=true
 
 # Debug Google Chrome installation
-RUN which google-chrome-stable && google-chrome-stable --version
+RUN which google-chrome && google-chrome --version
 
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
@@ -59,6 +58,9 @@ RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.ins
 
 # Expose the port that Flask will run on
 EXPOSE 8000
+
+# Copy the entire application code
+COPY . .
 
 # Run the Flask app
 CMD ["python", "app.py"]
