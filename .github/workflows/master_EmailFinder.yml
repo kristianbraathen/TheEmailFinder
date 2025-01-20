@@ -30,6 +30,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r src/PyFiles/requirements.txt
         
+      - name: Build Docker image
+        run: |
+          docker build -t emailfinder:latest -f src/PyFiles/Dockerfile .
+
+      - name: Run Docker container (optional)
+        run: |
+          docker run -d -p 5000:5000 emailfinder:latest
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
