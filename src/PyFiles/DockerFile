@@ -4,7 +4,7 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install dependencies for Chrome, ChromeDriver, and additional dependencies
+# Install system dependencies for psycopg2 and Chrome/ChromeDriver
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -26,7 +26,9 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     xdg-utils \
     fonts-liberation \
-    libvulkan1 && rm -rf /var/lib/apt/lists/*  # Comment should be removed or placed on a separate line
+    libpq-dev \    # Required for psycopg2
+    gcc \          # Required to compile psycopg2
+    && rm -rf /var/lib/apt/lists/*
 
 # Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
