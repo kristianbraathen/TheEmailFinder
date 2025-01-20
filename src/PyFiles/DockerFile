@@ -28,7 +28,8 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     libpq-dev \    # Required for psycopg2
     gcc \          # Required to compile psycopg2
-    && rm -rf /var/lib/apt/lists/*
+    libvulkan1 && rm -rf /var/lib/apt/lists/*  # Comment should be removed or placed on a separate line
+
 
 # Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
