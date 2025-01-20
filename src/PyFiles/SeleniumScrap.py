@@ -15,7 +15,7 @@ api4_blueprint = Blueprint('api4', __name__)
 # Set Chrome executable path
 os.environ["PATH"] += os.pathsep + "/usr/bin/google-chrome"
 # Configure ChromeDriver using chromedriver-autoinstaller
-chromedriver_autoinstaller.install()  # Automatically downloads and installs the correct version
+chromedriver_autoinstaller.install()  
 
 # Set up Chrome with necessary options
 options = Options()
