@@ -26,9 +26,9 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     xdg-utils \
     fonts-liberation \
-    libpq-dev \    # Required for psycopg2
-    gcc \          # Required to compile psycopg2
-    libvulkan1 && rm -rf /var/lib/apt/lists/*  # Comment should be removed or placed on a separate line
+    libpq-dev \    
+    gcc \         
+    libvulkan1 && rm -rf /var/lib/apt/lists/*  
 
 
 # Download and install Google Chrome
