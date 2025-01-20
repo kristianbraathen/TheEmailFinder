@@ -9,9 +9,11 @@ import re
 import time
 from flask import Flask, jsonify, Blueprint, request
 import chromedriver_autoinstaller  # Automatically installs the correct chromedriver version
+import os
 
 api4_blueprint = Blueprint('api4', __name__)
-
+# Set Chrome executable path
+os.environ["PATH"] += os.pathsep + "/usr/bin/google-chrome"
 # Configure ChromeDriver using chromedriver-autoinstaller
 chromedriver_autoinstaller.install()  # Automatically downloads and installs the correct version
 
