@@ -29,7 +29,10 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r src/PyFiles/requirements.txt
-        
+      
+      - name: List files in the repository
+        run: ls -R
+
       - name: Build Docker image
         run: |
           docker build -t emailfinder:latest -f src/PyFiles/Dockerfile .
