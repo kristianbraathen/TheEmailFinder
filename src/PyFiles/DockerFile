@@ -27,32 +27,38 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     fonts-liberation \
     libvulkan1 \
+    gnupg \
+    gcc \
+    libpq-dev \
+    libnss3 \
+    libgconf-2-4 \
+    libxss1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install Google Chrome
+# Last ned og installer Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb \
-    && apt-get install -y -f \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm google-chrome-stable_current_amd64.deb
 
+# Legg Google Chrome til PATH
+ENV PATH=$PATH:/usr/bin
 
-# Debug the Chrome and Chromedriver installation paths
-RUN which google-chrome-stable
+# Debug Google Chrome
+RUN which google-chrome-stable && google-chrome-stable --version
 
-# Set the correct PATH for Google Chrome
-ENV PATH=$PATH:/usr/bin/google-chrome-stable:/usr/lib/chromium-browser/
+# Installer Python-avhengigheter
+WORKDIR /app
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Add the following lines to install gcc and libpq-dev
-RUN apt-get update && apt-get install -y gcc libpq-dev
+# Debug Chromedriver-autoinstaller
+RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
 
 # Install the dependencies inside the container
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the app.py file from the current directory (src/PyFiles) into the container's /app directory
-COPY src/PyFiles/app.py .
 
 # Expose the port that Flask will run on
 EXPOSE 8000
