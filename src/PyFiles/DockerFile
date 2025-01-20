@@ -4,7 +4,7 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies for psycopg2 and Chrome/ChromeDriver
+# Install dependencies for Chrome and ChromeDriver
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -26,10 +26,8 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     xdg-utils \
     fonts-liberation \
-    libpq-dev \    
-    gcc \         
-    libvulkan1 && rm -rf /var/lib/apt/lists/*  
-
+    libvulkan1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
@@ -37,8 +35,14 @@ RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_am
     && apt-get install -y -f \
     && rm google-chrome-stable_current_amd64.deb
 
+# Debug the Chrome installation path
+RUN which google-chrome-stable
+
 # Set the correct PATH for Google Chrome
 ENV PATH=$PATH:/usr/bin/google-chrome-stable
+
+# Ensure chromedriver is installed
+RUN chromedriver --version
 
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
