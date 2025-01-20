@@ -54,19 +54,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-            python -m pip install --upgrade pip
-            pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt  # Adjusted to use correct path
-            pip install chromedriver-autoinstaller
-            
-      - name: Verify chromedriver installation
-        run: |
-          python -m venv venv
           source venv/bin/activate
           python -m pip install --upgrade pip
-          pip install chromedriver-autoinstaller
+          pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt
+
+      - name: Verify chromedriver installation
+        run: |
+          source venv/bin/activate
           python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
-      
       - name: List files in the repository
         run: ls -R
 
