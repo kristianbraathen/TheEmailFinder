@@ -13,6 +13,14 @@ from Kseapi1881 import api5_blueprint
 from ExcelHandler import upload_blueprint
 from DbToExcel import download_blueprint
 
+# Global UnicodeDecodeError handling
+def handle_unicode_errors(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, UnicodeDecodeError):
+        print(f"UnicodeDecodeError caught: {exc_value}")
+    else:
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+sys.excepthook = handle_unicode_errors
 app = Flask(__name__)
 
 # CORS Configuration
