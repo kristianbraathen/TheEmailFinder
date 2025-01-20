@@ -35,7 +35,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t emailfinder:latest -f src/PyFiles/Dockerfile .
+          docker build -t emailfinder:latest -f src/PyFiles/DockerFile .
 
       - name: Run Docker container (optional)
         run: |
