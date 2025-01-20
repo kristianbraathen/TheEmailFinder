@@ -59,7 +59,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t emailfinder:latest -f src/PyFiles/DockerFile .
+          docker build  --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
 
       - name: Run the Flask app (optional, for testing)
         run: |
