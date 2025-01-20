@@ -13,7 +13,7 @@ import chromedriver_autoinstaller  # Automatically installs the correct chromedr
 api4_blueprint = Blueprint('api4', __name__)
 
 # Configure ChromeDriver using chromedriver-autoinstaller
-chromedriver_autoinstaller.install()  # Automatically downloads and installs the correct version
+chromedriver_autoinstaller.install(path="/usr/bin")  # Automatically downloads and installs the correct version
 
 # Set up Chrome with necessary options
 options = Options()
