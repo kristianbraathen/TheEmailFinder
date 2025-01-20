@@ -35,30 +35,27 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Last ned og installer Google Chrome
+# Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
     && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm google-chrome-stable_current_amd64.deb
 
-# Legg Google Chrome til PATH
+# Add Google Chrome to PATH
 ENV PATH=$PATH:/usr/bin
+ENV CHROME_BIN=/usr/bin/google-chrome
+ENV CHROMEDRIVER_AUTO_INSTALL=true
 
-# Debug Google Chrome
+# Debug Google Chrome installation
 RUN which google-chrome-stable && google-chrome-stable --version
-
-# Installer Python-avhengigheter
-WORKDIR /app
-COPY src/PyFiles/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Debug Chromedriver-autoinstaller
-RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
 COPY src/PyFiles/requirements.txt .
 
-# Install the dependencies inside the container
+# Install Python dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Test chromedriver_autoinstaller installation
+RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
 # Expose the port that Flask will run on
 EXPOSE 8000
