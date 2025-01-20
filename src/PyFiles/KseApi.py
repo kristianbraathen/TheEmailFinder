@@ -9,12 +9,14 @@ import re
 from urllib.parse import unquote
 from threading import Lock
 from Db import db
+import chromedriver_autoinstaller
 
 # Flask-app
 api3_blueprint = Blueprint('api3', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
+chromedriver_autoinstaller.install()  
 # Konfigurasjon for Selenium
 chrome_service = Service('C:\\Users\\Krist\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe')
 chrome_options = Options()
