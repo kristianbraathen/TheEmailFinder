@@ -35,13 +35,17 @@ RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_am
     && apt-get install -y -f \
     && rm google-chrome-stable_current_amd64.deb
 
-# Debug the Chrome installation path
+# Install ChromeDriver
+RUN apt-get install -y chromium-driver
+
+# Debug the Chrome and Chromedriver installation paths
 RUN which google-chrome-stable
+RUN which chromedriver
 
 # Set the correct PATH for Google Chrome
-ENV PATH=$PATH:/usr/bin/google-chrome-stable
+ENV PATH=$PATH:/usr/bin/google-chrome-stable:/usr/lib/chromium-browser/
 
-# Ensure chromedriver is installed
+# Ensure chromedriver is installed correctly
 RUN chromedriver --version
 
 # Copy the requirements file from the current directory (src/PyFiles) into the container's /app directory
