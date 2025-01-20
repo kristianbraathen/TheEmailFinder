@@ -38,7 +38,6 @@ RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_am
 
 # Debug the Chrome and Chromedriver installation paths
 RUN which google-chrome-stable
-RUN which chromedriver
 
 # Set the correct PATH for Google Chrome
 ENV PATH=$PATH:/usr/bin/google-chrome-stable:/usr/lib/chromium-browser/
