@@ -51,7 +51,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: |
           source venv/bin/activate
@@ -64,23 +64,19 @@ jobs:
           python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
       - name: List files in the repository
-        run: ls -R
+        run: |
+          source venv/bin/activate
+          ls -R
 
       - name: Build Docker image
         run: |
+          source venv/bin/activate
           docker build --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
 
       - name: Run the Flask app (optional, for testing)
         run: |
+          source venv/bin/activate
           docker run -d -p 8000:8000 emailfinder:latest
-
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v3
-        with:
-          name: python-app
-          path: |
-            .
-            !venv/
 
   deploy:
     permissions:
