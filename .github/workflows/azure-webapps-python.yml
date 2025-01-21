@@ -51,11 +51,11 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-
+      
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt
 
       - name: Verify chromedriver installation
