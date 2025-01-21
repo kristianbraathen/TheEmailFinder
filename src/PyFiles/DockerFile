@@ -54,8 +54,8 @@ COPY src/PyFiles/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Test chromedriver_autoinstaller installation
-RUN python -m pip install chromedriver-autoinstaller \
-    && python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
+RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
+    && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
 # Expose the port that Flask will run on
 EXPOSE 8000
