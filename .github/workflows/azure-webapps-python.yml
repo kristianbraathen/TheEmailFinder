@@ -50,32 +50,32 @@ jobs:
       - name: Create and start virtual environment
         run: |
           python -m venv venv
-          echo "source venv/bin/activate" >> $GITHUB_ENV
+          echo "VENVSOURCE=venv/bin/activate" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
-          source venv/bin/activate
+          source $VENVSOURCE
           python -m pip install --upgrade pip setuptools wheel
           pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt
 
       - name: Verify chromedriver installation
         run: |
-          source venv/bin/activate
+          source $VENVSOURCE
           python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
       - name: List files in the repository
         run: |
-          source venv/bin/activate
+          source $VENVSOURCE
           ls -R
 
       - name: Build Docker image
         run: |
-          source venv/bin/activate
+          source $VENVSOURCE
           docker build --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
 
       - name: Run the Flask app (optional, for testing)
         run: |
-          source venv/bin/activate
+          source $VENVSOURCE
           docker run -d -p 8000:8000 emailfinder:latest
 
       - name: Upload artifact for deployment jobs
