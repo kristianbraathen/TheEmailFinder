@@ -21,7 +21,7 @@ process_running = False  # Global flag to track the process state
 os.environ["PATH"] += os.pathsep + "/usr/bin/google-chrome"
 chromedriver_autoinstaller.install()  
 # Konfigurasjon for Selenium
-chrome_service = Service('C:\\Users\\Krist\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe')
+chrome_service = Service()
 chrome_options = Options()
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
