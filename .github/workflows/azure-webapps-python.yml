@@ -50,7 +50,7 @@ jobs:
       - name: Create and start virtual environment
         run: |
           python -m venv venv
-          echo "source venv/bin/activate" >> $GITHUB_ENV
+          echo "VENVSOURCE=source venv/bin/activate" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
