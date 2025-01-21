@@ -4,13 +4,11 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-USER root
 # Install dependencies for Chrome and ChromeDriver
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
-    libx11-dev \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
@@ -31,19 +29,18 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     gcc \
     libpq-dev \
-    libnss3 \
     libgconf-2-4 \
     libxss1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install Google Chrome
 RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
     && rm google-chrome-stable_current_amd64.deb
 
 # Add Google Chrome to PATH
-ENV PATH=$PATH:/usr/bin
-ENV CHROME_BIN=/usr/bin/google-chrome
+ENV PATH="/usr/bin:$PATH"
+ENV CHROME_BIN="/usr/bin/google-chrome"
 
 # Debug Google Chrome installation
 RUN which google-chrome && google-chrome --version
@@ -54,7 +51,7 @@ COPY src/PyFiles/requirements.txt .
 # Install Python dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Test chromedriver_autoinstaller installation
+# Test chromedriver_autoinstaller installation and Chrome
 RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
     && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
