@@ -23,6 +23,7 @@ chromedriver_autoinstaller.install()
 # Konfigurasjon for Selenium
 chrome_service = Service()
 chrome_options = Options()
+options.binary_location = "/usr/bin/google-chrome"
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
