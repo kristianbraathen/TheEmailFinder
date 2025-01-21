@@ -20,9 +20,9 @@
 name: Build and deploy Python app to Azure Web App
 
 env:
-  AZURE_WEBAPP_NAME: 'EmailFinder'  # set this to the name of your Azure Web App
-  PYTHON_VERSION: '3.9'              # set this to the Python version to use
-  AZURE_WEBAPP_PACKAGE_PATH: 'src/PyFiles'  # Adjust this if your code is inside this directory
+  AZURE_WEBAPP_NAME: 'EmailFinder'
+  PYTHON_VERSION: '3.9'
+  AZURE_WEBAPP_PACKAGE_PATH: 'src/PyFiles'
   AZURE_POSTGRESQL_CONNECTIONSTRING: 'postgresql+psycopg2://vokzkzkzkv:5ufJP%24SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require'
   DATABASE_URL: 'postgresql+psycopg2://vokzkzkvk:5ufJP%24SdFMoxwgvT@emailfinder-server.postgres.database.azure.com:5432/emailfinder-database?sslmode=require'
 
@@ -50,7 +50,7 @@ jobs:
       - name: Create and start virtual environment
         run: |
           python -m venv venv
-          source venv/bin/activate
+          echo "source venv/bin/activate" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
@@ -78,6 +78,14 @@ jobs:
           source venv/bin/activate
           docker run -d -p 8000:8000 emailfinder:latest
 
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-app
+          path: |
+            .
+            !venv/
+
   deploy:
     permissions:
       contents: none
@@ -98,5 +106,5 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}  # Corrected reference to AZURE_WEBAPP_NAME
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4A5B3316A81B4A24981ECB1AECCEF612 }}
