@@ -57,6 +57,11 @@ jobs:
           source venv/bin/activate
           python -m pip install --upgrade pip setuptools wheel
           pip install -r ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/requirements.txt
+     
+      - name: Install Google Chrome
+        run: |
+          sudo apt update
+          sudo apt install -y google-chrome-stable
 
       - name: Verify chromedriver installation
         run: |
