@@ -16,7 +16,7 @@ api3_blueprint = Blueprint('api3', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state 
 
-os.environ["PATH"] += os.pathsep + "/usr/bin/google-chrome"
+os.environ["CUSTOM_PATH"] += os.pathsep + "/usr/bin/google-chrome"
 chromedriver_autoinstaller.install()  
 # Konfigurasjon for Selenium
 chrome_service = Service()
