@@ -33,15 +33,7 @@ jobs:
       - name: List files in the repository
         run: ls -R
 
-      - name: Build Docker image
-        run: |
-          docker build  --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
-
-      - name: Run Docker container (optional)
-        run: |
-          docker run -d -p 5000:5000 emailfinder:latest
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-
+      
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
 
