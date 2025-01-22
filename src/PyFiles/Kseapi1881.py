@@ -18,19 +18,20 @@ api5_blueprint = Blueprint('api5', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
-os.environ["CUSTOM_PATH"] += os.pathsep + "/usr/bin/google-chrome"
+
 chromedriver_autoinstaller.install()  
 # Konfigurasjon for Selenium
 chrome_service = Service()
 chrome_options = Options()
-options.binary_location = "/usr/bin/google-chrome"
+options.binary_location =  os.getenv('CHROME_BIN') 
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
 
-
+# If CHROMEDRIVER_PATH is set in the environment, you can use it directly
+driver_path = os.getenv('CHROMEDRIVER_PATH')  # Path to ChromeDriver
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
@@ -51,7 +52,7 @@ def google_custom_search(query):
 # Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
-        driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+        driver = webdriver.Chrome(service=chrome_service, options=chrome_options, executable_path=driver_path)
         driver.get(url)
         time.sleep(5)  # Bytt gjerne med WebDriverWait for bedre ytelse
         page_source = driver.page_source
