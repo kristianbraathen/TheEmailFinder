@@ -40,7 +40,7 @@ export CHROME_BIN="/usr/bin/google-chrome"
 which google-chrome && google-chrome --version
 
 # Naviger til mappen der appen og requirements.txt ligger
-cd /app/src/PyFiles
+cd /home/site/wwwroot/src/PyFiles
 
 # Installer Python-avhengigheter
 sudo apt-get install -y python3-pip
