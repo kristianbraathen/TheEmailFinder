@@ -9,10 +9,10 @@ sudo apt-get update && sudo apt-get install -y \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    libgl1-mesa-glx \
+    libgl1 \
     libgtk-3-0 \
     libnss3 \
-    libasound2 \
+    libasound2-data \
     libxtst6 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -25,14 +25,12 @@ sudo apt-get update && sudo apt-get install -y \
     gnupg \
     gcc \
     libpq-dev \
-    libgconf-2-4 \
-    libxss1 \
-    && sudo rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Last ned og installer Google Chrome
-sudo curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
+curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
     && sudo apt-get install -y ./google-chrome-stable_current_amd64.deb \
-    && sudo rm google-chrome-stable_current_amd64.deb
+    && rm google-chrome-stable_current_amd64.deb
 
 # Legg til Google Chrome i PATH
 export PATH="/usr/bin:$PATH"
@@ -45,11 +43,13 @@ which google-chrome && google-chrome --version
 cd /app/src/PyFiles
 
 # Installer Python-avhengigheter
-sudo pip install --no-cache-dir -r requirements.txt
+sudo apt-get install -y python3-pip
+pip3 install --no-cache-dir -r requirements.txt
 
 # Test chromedriver_autoinstaller og Google Chrome
-python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
+python3 -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
     && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
 # Sett opp Gunicorn for å kjøre Flask-appen
-sudo gunicorn --bind 0.0.0.0:$PORT app:app
+sudo apt-get install -y gunicorn
+gunicorn --bind 0.0.0.0:$PORT app:app
