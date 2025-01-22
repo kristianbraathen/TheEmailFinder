@@ -68,11 +68,6 @@ jobs:
           source $VENVSOURCE
           ls -R
 
-     
-      - name: Run the Flask app (optional, for testing)
-        run: |
-          source $VENVSOURCE
-          docker run -d -p 8000:8000 emailfinder:latest
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v3
