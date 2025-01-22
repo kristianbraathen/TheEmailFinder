@@ -12,15 +12,13 @@ import chromedriver_autoinstaller  # Automatically installs the correct chromedr
 import os
 
 api4_blueprint = Blueprint('api4', __name__)
-# Set Chrome executable path
-os.environ["CUSTOM_PATH"] += os.pathsep + "/usr/bin/google-chrome"
+
 # Configure ChromeDriver using chromedriver-autoinstaller
 chromedriver_autoinstaller.install()  
 
 # Set up Chrome with necessary options
 options = Options()
-options.binary_location = "/usr/bin/google-chrome"
-options.add_argument("--disable-gpu")
+options.binary_location = os.getenv('CHROME_BIN')
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-webusb")
 options.add_argument("--disable-extensions")
@@ -32,10 +30,11 @@ options.add_argument("--disable-webgl")
 options.add_argument("--disable-webgpu")
 options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 options.add_argument("--disable-blink-features=AutomationControlled")
-# options.add_argument('--headless')  # Uncomment to run in headless mode (for production)
+options.add_argument('--headless')  # Uncomment to run in headless mode (for production)
 
+driver_path = os.getenv('CHROMEDRIVER_PATH')
 # Create the WebDriver
-driver = webdriver.Chrome(options=options)
+driver = webdriver.Chrome(executable_path=driver_path, options=options)
 
 def find_emails_on_facebook(company_name):
     try:
