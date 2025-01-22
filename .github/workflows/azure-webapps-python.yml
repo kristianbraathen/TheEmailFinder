@@ -68,11 +68,7 @@ jobs:
           source $VENVSOURCE
           ls -R
 
-      - name: Build Docker image
-        run: |
-          source $VENVSOURCE
-          docker build --no-cache -t emailfinder:latest -f src/PyFiles/DockerFile .
-
+     
       - name: Run the Flask app (optional, for testing)
         run: |
           source $VENVSOURCE
