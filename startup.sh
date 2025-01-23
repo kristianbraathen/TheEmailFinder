@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Oppdater og installer nødvendige systempakker
-apt-get update && sudo apt-get install -y \
+apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
