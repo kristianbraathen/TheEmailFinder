@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Oppdater og installer nødvendige systempakker
-sudo apt-get update && sudo apt-get install -y \
+apt-get update && sudo apt-get install -y \
     wget \
     curl \
     unzip \
@@ -29,7 +29,7 @@ sudo apt-get update && sudo apt-get install -y \
 
 # Last ned og installer Google Chrome
 curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
-    && sudo apt-get install -y ./google-chrome-stable_current_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
     && rm google-chrome-stable_current_amd64.deb
 
 # Legg til Google Chrome i PATH
@@ -43,7 +43,7 @@ which google-chrome && google-chrome --version
 cd /home/site/wwwroot/src/PyFiles
 
 # Installer Python-avhengigheter
-sudo apt-get install -y python3-pip
+apt-get install -y python3-pip
 pip3 install --no-cache-dir -r requirements.txt
 
 # Test chromedriver_autoinstaller og Google Chrome
@@ -51,5 +51,5 @@ python3 -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.instal
     && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
 # Sett opp Gunicorn for å kjøre Flask-appen
-sudo apt-get install -y gunicorn
+apt-get install -y gunicorn
 gunicorn --bind 0.0.0.0:$PORT app:app
