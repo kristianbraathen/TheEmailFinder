@@ -57,22 +57,17 @@ jobs:
     needs: build-and-push
 
     steps:
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: SERVICE_PRINCIPAL
-          enable-AzPSSession: false
-          environment: azurecloud
-          allow-no-subscriptions: true
-          audience: api://AzureADTokenExchange
+       - name: Log in to Azure CLI
+         uses: azure/login@v1
+         with:
+           client-id: ${{ secrets.AZURE_CLIENT_ID }}
+           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+           client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
+       - name: Deploy to Azure Web App
+         uses: azure/webapps-deploy@v2
+         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
