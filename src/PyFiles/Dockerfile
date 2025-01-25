@@ -27,7 +27,11 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     libvulkan1 \
     gnupg \
+    unixodbc \
+    unixodbc-dev \
     gcc \
+    g++ \
+    pyodbc \
     libpq-dev \
     libgconf-2-4 \
     libxss1 \
