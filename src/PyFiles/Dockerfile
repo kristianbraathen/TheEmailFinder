@@ -31,10 +31,17 @@ RUN apt-get update && apt-get install -y \
     unixodbc-dev \
     gcc \
     g++ \
-    pyodbc \
     libpq-dev \
     libgconf-2-4 \
     libxss1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Microsoft's package repository for pyodbc
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
+    && apt-get install -y pyodbc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome
@@ -65,7 +72,4 @@ EXPOSE 8080
 ENV PORT 8080
 
 # Run Gunicorn to serve the Flask app
-# Run Gunicorn to serve the Flask app
 CMD gunicorn --bind 0.0.0.0:$PORT app:app
-
-
