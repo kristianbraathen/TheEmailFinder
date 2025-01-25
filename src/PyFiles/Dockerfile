@@ -36,11 +36,13 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libodbc1 \
     && rm -rf /var/lib/apt/lists/*
-# Create symlink for libodbc.so.2 if needed
-RUN ln -s /usr/lib/x86_64-linux-gnu/libodbc.so /usr/lib/x86_64-linux-gnu/libodbc.so.2
+
+# Create symlink for libodbc.so.2 if needed (force or remove the existing one)
+RUN rm -f /usr/lib/x86_64-linux-gnu/libodbc.so.2 && ln -s /usr/lib/x86_64-linux-gnu/libodbc.so /usr/lib/x86_64-linux-gnu/libodbc.so.2
 
 # Verify libodbc installation
 RUN ls -l /usr/lib/x86_64-linux-gnu/ | grep libodbc
+
 # Add Microsoft's package repository for msodbcsql17
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
