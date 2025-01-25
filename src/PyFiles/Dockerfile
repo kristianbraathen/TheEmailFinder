@@ -36,12 +36,11 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Add Microsoft's package repository for pyodbc
+# Add Microsoft's package repository for msodbcsql17
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
     && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-    && apt-get install -y pyodbc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome
@@ -61,6 +60,9 @@ COPY . /app
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Install pyodbc via pip after system dependencies are in place
+RUN pip install pyodbc
 
 # Install chromedriver (as per the script) and run a test
 RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
