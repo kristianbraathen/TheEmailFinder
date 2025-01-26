@@ -19,7 +19,7 @@ process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
 
- Install ChromeDriver automatically if not set
+# Install ChromeDriver automatically if not set
 chromedriver_autoinstaller.install()
 
 # Get ChromeDriver path from environment variable (if set)
