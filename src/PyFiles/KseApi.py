@@ -11,6 +11,8 @@ from threading import Lock
 from Db import db
 import chromedriver_autoinstaller
 import os
+import tempfile
+
 # Flask-app
 api3_blueprint = Blueprint('api3', __name__)
 process_lock = Lock()
@@ -40,6 +42,10 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
+
+# Generate a unique temporary directory for user data (if needed)
+temp_dir = tempfile.mkdtemp()
+chrome_options.add_argument(f"--user-data-dir={temp_dir}")
 
 # Initialize the WebDriver
 driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
