@@ -19,19 +19,32 @@ process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
 
-chromedriver_autoinstaller.install()  
+ Install ChromeDriver automatically if not set
+chromedriver_autoinstaller.install()
+
+# Get ChromeDriver path from environment variable (if set)
+driver_path = os.getenv('CHROMEDRIVER_PATH')
+
+# If CHROMEDRIVER_PATH is not set, use the default path provided by chromedriver_autoinstaller
+if not driver_path:
+    driver_path = chromedriver_autoinstaller.install()
+
 # Konfigurasjon for Selenium
-chrome_service = Service()
+chrome_service = Service(driver_path)
 chrome_options = Options()
-chrome_options.binary_location =  os.getenv('CHROME_BIN') 
+
+# Specify the location of your Chrome binary (optional if it's in the default path)
+chrome_options.binary_location = os.getenv('CHROME_BIN')  # Path to the Chrome binary (if needed)
+
+# Set Chrome options
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
 
-# If CHROMEDRIVER_PATH is set in the environment, you can use it directly
-driver_path = os.getenv('CHROMEDRIVER_PATH')  # Path to ChromeDriver
+# Initialize the WebDriver
+driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
