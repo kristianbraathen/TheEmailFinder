@@ -78,7 +78,7 @@ RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.ins
 EXPOSE 8080
 
 # Set default port value (Ensure it works in your container)
-ENV PORT 8080
+ENV PORT=8080
 
 # Run Gunicorn to serve the Flask app
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
