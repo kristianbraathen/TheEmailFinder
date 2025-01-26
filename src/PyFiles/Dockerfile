@@ -65,9 +65,10 @@ RUN which google-chrome && google-chrome --version
 # Copy the application files into the container
 COPY . /app
 
-# Install Python dependencies using pip, including pyodbc
+# Install Python dependencies using pip, including pyodbc and gunicorn
 RUN pip install --no-cache-dir -r /app/requirements.txt \
-    && pip install pyodbc
+    && pip install pyodbc \
+    && pip install gunicorn
 
 # Install chromedriver (as per the script) and run a test
 RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
@@ -75,9 +76,9 @@ RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.ins
 
 # Expose port 8080 for the app
 EXPOSE 8080
+
 # Set default port value (Ensure it works in your container)
 ENV PORT 8080
 
 # Run Gunicorn to serve the Flask app
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
-
