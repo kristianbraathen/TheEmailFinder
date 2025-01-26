@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
@@ -34,7 +35,8 @@ options.add_argument('--headless')  # Uncomment to run in headless mode (for pro
 
 driver_path = os.getenv('CHROMEDRIVER_PATH')
 # Create the WebDriver
-driver = webdriver.Chrome(executable_path=driver_path, options=options)
+service = Service(driver_path)
+driver = webdriver.Chrome(service=service, options=options)
 
 def find_emails_on_facebook(company_name):
     try:
