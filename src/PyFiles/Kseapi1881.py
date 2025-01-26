@@ -44,9 +44,7 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--lang=en-NO")
 chrome_options.add_argument("--enable-unsafe-swiftshader")
-
-temp_dir = tempfile.mkdtemp()  # Create a unique temporary directory
-chrome_options.add_argument(f"--user-data-dir={temp_dir}")
+chrome_options.add_argument("--disable-user-data-dir")
 
 # Initialize the WebDriver
 driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
