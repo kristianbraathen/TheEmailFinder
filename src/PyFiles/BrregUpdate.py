@@ -6,7 +6,7 @@ from Db import db
 api2_blueprint = Blueprint('api2', __name__)
 
 # SQL Server-tilkobling
-
+connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
 def process_organization_with_single_call(org_nr):
     """
