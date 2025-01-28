@@ -19,7 +19,7 @@ import tempfile
 api5_blueprint = Blueprint('api5', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
-
+connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
 # Install ChromeDriver automatically if not set
 chromedriver_autoinstaller.install()
