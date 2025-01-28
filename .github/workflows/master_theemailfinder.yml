@@ -8,7 +8,7 @@ env:
   AZURE_WEBAPP_NAME: 'theemailfinder'
   DOCKER_IMAGE_NAME: 'krisdocker307/theemailfinder'
   DOCKER_IMAGE_TAG: 'latest'
-
+  DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
 on:
   push:
     branches: [ "master" ]
