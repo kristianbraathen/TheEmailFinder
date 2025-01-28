@@ -48,7 +48,6 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DDBDA77844C646369677A222E2103256 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BB5321127104439390C66CECBF7EC4CD }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BB4BC7F4E9BC423BBB5BD24ABD63DF97 }}
-          auth-type: 'OIDC'  
           environment: azurecloud
           allow-no-subscriptions: true
           
