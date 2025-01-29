@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import pyodbc
 from flask import Flask, jsonify, Blueprint
 from Db import db
+import os
+
 api2_blueprint = Blueprint('api2', __name__)
 
 # SQL Server-tilkobling
