@@ -46,27 +46,20 @@ chrome_options.add_argument("--no-sandbox")  # Avoid sandboxing issues in contai
 chrome_options.add_argument("--disable-extensions")  # Disable extensions
 chrome_options.add_argument("--disable-dev-shm-usage")  # Address shared memory issues in Docker
 chrome_options.add_argument("--disable-software-rasterizer")  # Disable software rendering
-
 # Language and regional settings
 chrome_options.add_argument("--lang=en-NO")  # Norwegian language
-
 # Safe rendering mode
 chrome_options.add_argument("--enable-unsafe-swiftshader")  # SwiftShader for software rendering fallback (optional)
-
 # Experimental: User data settings
 # This is what you currently have
 chrome_options.add_argument("--disable-user-data-dir")  # Ensure no specific user profile is loaded
-
 # Add this to avoid DBus-related errors
 chrome_options.add_argument("--disable-dev-tools")  # Disable developer tools
 chrome_options.add_argument("--remote-debugging-port=0")  # Prevent remote debugging
-
 # Add extra logging for debugging purposes
 chrome_options.add_argument("--log-level=3")  # Suppress logs (INFO, WARNING, and ERROR logs)
-
 # Optional: Disable default apps
 chrome_options.add_argument("--disable-default-apps")
-
 # Ensure a unique, isolated session is created
 chrome_options.add_argument("--disable-session-crashed-bubble")  # Disable "restore session" dialog
 # Initialize the WebDriver
