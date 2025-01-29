@@ -27,7 +27,7 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:8080, http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net"])
 
    # Retrieve the connection string from the environment variable
-database_url = os.getenv('DATABASE_URL') or os.getenv('AZURE_POSTGRESQL_CONNECTIONSTRING')
+database_url = os.getenv('DATABASE_CONNECTION_STRING')
 
 if not database_url:
     raise ValueError("No database URL provided in environment variables.")
