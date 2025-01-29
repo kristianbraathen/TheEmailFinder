@@ -45,9 +45,9 @@ jobs:
       - name: Log in to Azure CLI
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DDBDA77844C646369677A222E2103256 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BB5321127104439390C66CECBF7EC4CD }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BB4BC7F4E9BC423BBB5BD24ABD63DF97 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           environment: azurecloud
           allow-no-subscriptions: true
           
