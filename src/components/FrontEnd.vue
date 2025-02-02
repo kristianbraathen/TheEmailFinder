@@ -70,7 +70,7 @@
                 this.status = "Pending..."; // Startstatus
 
                 try {
-                    const response = await axios.post("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
 
                     if (response.data.status) {
                         this.status = response.data.status;
@@ -92,7 +92,7 @@
 
                 try {
                     const response = await axios.get(
-                        `http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/SeleniumScrap/search_by_company_name?company_name=${this.search_by_company_name}`
+                        `https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SeleniumScrap/search_by_company_name?company_name=${this.search_by_company_name}`
                     );
                     this.status = response.data.status;
                     this.searchResults = response.data;
