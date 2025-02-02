@@ -72,7 +72,7 @@
 
             async fetchCompanies() {
                 try {
-                    const response = await axios.get("http://localhost:5000/KseApi/search_emails");
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/search_emails");
                     this.companies = Array.isArray(response.data) ? response.data : [];
                     this.processRunning = true;
 
@@ -84,7 +84,7 @@
             // Select an email and send it to the backend
             async selectEmail(orgNr, email) {
                 try {
-                    const response = await axios.post("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/KseApi/update_email", {
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/update_email", {
                         org_nr: orgNr,
                         email: email,
                     });
@@ -104,7 +104,7 @@
             async startProcess() {
                 if (!this.processRunning) {
                     try {
-                        const response = await axios.post("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/KseApi/start_process");
+                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/start_process");
                         alert(response.data.status);
                         this.processRunning = true;  // Sett prosessen til å være aktiv
                         this.currentSearchQuery = "Prossessen Kjører.." // Eksempelpå søkeprogresjon
@@ -121,7 +121,7 @@
             },
             async stopProcess() {
                 try {
-                    const response = await axios.post("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/KseApi/stop_process");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/stop_process");
                     alert(response.data.status);
                     this.processRunning = false;
                     this.currentSearchQuery = 'Prosessen er stoppet.';
