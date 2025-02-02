@@ -9,7 +9,7 @@ export default {
   methods: {
     async downloadExcel() {
       try {
-          const response = await fetch("http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/DbToExcel/export_to_excel");
+          const response = await fetch("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/DbToExcel/export_to_excel");
         if (!response.ok) {
           throw new Error("Feil under nedlasting.");
         }
@@ -26,7 +26,7 @@ export default {
         a.click();
         a.remove();
 
-        // Frigjør URL
+        // FrigjÃ¸r URL
         window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error("Feil under nedlasting:", error);
