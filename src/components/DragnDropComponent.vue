@@ -47,7 +47,7 @@
             },
             async uploadFile() {
                 if (!this.file) {
-                    alert("Vennligst velg en fil å laste opp.");
+                    alert("Vennligst velg en fil Ã¥ laste opp.");
                     return;
                 }
                 const formData = new FormData();
@@ -55,7 +55,7 @@
 
                 try {
                     const response = await axios.post(
-                        "http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net/ExcelHandler/upload-excel",
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/ExcelHandler/upload-excel",
                         formData,
                         {
                             headers: { "Content-Type": "multipart/form-data" },
