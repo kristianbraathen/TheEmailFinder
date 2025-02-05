@@ -80,7 +80,7 @@ EXPOSE 8080
 ENV PORT=8080
 
 # Copy start.sh and make it executable
-COPY PyFiles/start.sh /app/start.sh
+COPY /start.sh /app/start.sh
 
 RUN chmod +x /app/start.sh
 
