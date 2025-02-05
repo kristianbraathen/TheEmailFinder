@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
     libodbc1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for libodbc.so.2 if needed (force or remove the existing one)
+# Create symlink for libodbc.so.2 if needed
 RUN rm -f /usr/lib/x86_64-linux-gnu/libodbc.so.2 && ln -s /usr/lib/x86_64-linux-gnu/libodbc.so /usr/lib/x86_64-linux-gnu/libodbc.so.2
 
 # Verify libodbc installation
@@ -65,20 +65,23 @@ RUN which google-chrome && google-chrome --version
 # Copy the application files into the container
 COPY . .
 
-# Install Python dependencies using pip, including pyodbc and gunicorn
+# Install Python dependencies using pip
 RUN pip install --no-cache-dir -r /app/requirements.txt \
-    && pip install pyodbc \
-    && pip install gunicorn
+    && pip install pyodbc gunicorn
 
-# Install chromedriver (as per the script) and run a test
+# Install chromedriver
 RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
     && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
 # Expose port 8080 for the app
 EXPOSE 8080
 
-# Set default port value (Ensure it works in your container)
+# Set default port value
 ENV PORT=8080
 
-# Run Gunicorn to serve the Flask app
-CMD ["npm run server & gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+# Copy start.sh and make it executable
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Run the start script
+CMD ["/start.sh"]
