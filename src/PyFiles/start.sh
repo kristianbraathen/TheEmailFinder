@@ -1,3 +1,8 @@
 #!/bin/bash
-npm run server &  # Starter frontend eller en annen server
-gunicorn --bind 0.0.0.0:8080 app:app  # Starter Flask-appen
+set -e
+
+# Start the frontend or another server
+npm run server &
+
+# Start the Flask app
+gunicorn --bind 0.0.0.0:8080 app:app
