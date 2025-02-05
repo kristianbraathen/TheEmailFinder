@@ -24,7 +24,7 @@ sys.excepthook = handle_unicode_errors
 app = Flask(__name__)
 
 # CORS Configuration
-CORS(app, origins=["http://localhost:8080, http://emailfinder-h0g7f5hpa4eggcbb.norwayeast-01.azurewebsites.net"])
+CORS(app, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
    # Retrieve the connection string from the environment variable
 database_url = os.getenv('DATABASE_CONNECTION_STRING')
