@@ -63,7 +63,7 @@ ENV CHROME_BIN="/usr/bin/google-chrome"
 RUN which google-chrome && google-chrome --version
 
 # Copy the application files into the container
-COPY . /app
+COPY . .
 
 # Install Python dependencies using pip, including pyodbc and gunicorn
 RUN pip install --no-cache-dir -r /app/requirements.txt \
