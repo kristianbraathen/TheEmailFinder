@@ -2,13 +2,19 @@ version: '3.8'
 services:
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: .  # Bygg fra den nåværende katalogen
+      dockerfile: Dockerfile  # Bruk Dockerfile i roten
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Frontend eksponert på port 8080
+    depends_on:
+      - backend  # Forsikre deg om at backend starter først
+
   backend:
     build:
-      context: .
-      dockerfile: src/PyFiles/Dockerfile
+      context: .  # Bygg fra den nåværende katalogen
+      dockerfile: src/PyFiles/Dockerfile  # Bruk backend Dockerfile
     ports:
-      - "8080:8080"
+      - "8081:8080"  # Backend eksponert på port 8081 (eller hvilken som helst port du trenger)
+    environment:
+      - DATABASE_CONNECTION_STRING=${DATABASE_CONNECTION_STRING}  # Passer på å inkludere miljøvariabler
+
