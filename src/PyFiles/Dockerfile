@@ -38,15 +38,18 @@ RUN chmod +x /app/start.sh
 # --- Bygg frontend (Vue) ---
 FROM node:18-alpine AS frontend
 
-# Sett arbeidskatalog til /frontend
+# Sett arbeidskatalog til /frontend for Vue-prosjektet
 WORKDIR /frontend
 
-# Kopier kun frontend-filer
+# Kopier kun package.json og package-lock.json
 COPY src/package.json src/package-lock.json /frontend/
+
+# Installer npm avhengigheter for frontend
 RUN npm install
 
-# Kopier resten av frontend-prosjektet
-COPY PyFiles /app
+# Kopier frontend-komponenter og App.vue
+COPY src/components /frontend/src/components
+COPY src/App.vue /frontend/src/App.vue
 
 # Bygg Vue-prosjektet
 RUN npm run build
