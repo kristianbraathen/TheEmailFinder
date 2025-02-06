@@ -44,6 +44,7 @@ FROM node:18-alpine AS frontend
 # Sett arbeidskatalog til /frontend for Vue-prosjektet
 WORKDIR /frontend
 
+COPY . .
 # Kopier kun package.json og package-lock.json
 COPY package.json package-lock.json /frontend/
 
