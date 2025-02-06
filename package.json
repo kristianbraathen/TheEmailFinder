@@ -12,7 +12,8 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.13.1",
     "vue": "^3.2.13",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "axios": "^0.21.1"
   },
   "devDependencies": {
     "@vue/cli-service": "^5.0.8",
