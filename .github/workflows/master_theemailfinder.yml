@@ -34,7 +34,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest -f src/PyFiles/Dockerfile src
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest -f src/PyFiles/Dockerfile .
           docker push ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest
 
   deploy:
