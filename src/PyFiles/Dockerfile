@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y \
     libgdk-pixbuf2.0-0 libgbm1 xdg-utils fonts-liberation \
     libvulkan1 gnupg unixodbc unixodbc-dev gcc g++ \
     libpq-dev libgconf-2-4 libxss1 libodbc1 \
+    && rm -rf /var/lib/apt/lists/
+    # Install Google Chrome
+    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb \
+    && apt-get -f install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Kopier backend-filer fra PyFiles
