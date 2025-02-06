@@ -1,88 +1,61 @@
-# Use a base image with Python and a minimal Debian environment
-FROM python:3.9-slim
+# Bruk Python 3.9 som base for backend
+FROM python:3.9-slim AS backend
 
-# Set the working directory for your application
+# Sett arbeidskatalog til /app for backend
 WORKDIR /app
 
-# Install system dependencies
+# Installer systemavhengigheter
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    unzip \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgl1-mesa-glx \
-    libgtk-3-0 \
-    libnss3 \
-    libasound2 \
-    libxtst6 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libappindicator3-1 \
-    libgdk-pixbuf2.0-0 \
-    libgbm1 \
-    xdg-utils \
-    fonts-liberation \
-    libvulkan1 \
-    gnupg \
-    unixodbc \
-    unixodbc-dev \
-    gcc \
-    g++ \
-    libpq-dev \
-    libgconf-2-4 \
-    libxss1 \
-    libodbc1 \
+    wget curl unzip nodejs npm \
+    libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
+    libgl1-mesa-glx libgtk-3-0 libnss3 libasound2 libxtst6 \
+    libatk-bridge2.0-0 libatk1.0-0 libappindicator3-1 \
+    libgdk-pixbuf2.0-0 libgbm1 xdg-utils fonts-liberation \
+    libvulkan1 gnupg unixodbc unixodbc-dev gcc g++ \
+    libpq-dev libgconf-2-4 libxss1 libodbc1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for libodbc.so.2 if needed
-RUN rm -f /usr/lib/x86_64-linux-gnu/libodbc.so.2 && ln -s /usr/lib/x86_64-linux-gnu/libodbc.so /usr/lib/x86_64-linux-gnu/libodbc.so.2
+# Kopier backend-filer fra PyFiles
+COPY src/PyFiles /app
 
-# Verify libodbc installation
-RUN ls -l /usr/lib/x86_64-linux-gnu/ | grep libodbc
+# Installer Python-avhengigheter
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install pyodbc gunicorn chromedriver-autoinstaller
 
-# Add Microsoft's package repository for msodbcsql17
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Google Chrome
-RUN curl -sSL https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -o google-chrome-stable_current_amd64.deb \
-    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-    && rm google-chrome-stable_current_amd64.deb
-
-# Add Google Chrome to PATH
-ENV PATH="/usr/bin:$PATH"
-ENV CHROME_BIN="/usr/bin/google-chrome"
-
-# Test Google Chrome installation
-RUN which google-chrome && google-chrome --version
-
-# Copy the application files into the container
-COPY . .
-
-# Install Python dependencies using pip
-RUN pip install --no-cache-dir -r /app/requirements.txt \
-    && pip install pyodbc gunicorn
-
-# Install chromedriver
+# Installer Chrome og Chromedriver
 RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
     && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
 
-# Expose port 8080 for the app
+# Eksponer port 8080 for backend
 EXPOSE 8080
 
-# Set default port value
+# Sett standardport
 ENV PORT=8080
 
-# Copy start.sh and make it executable
-COPY /start.sh /app/start.sh
-
+# Gjør start.sh kjørbar
 RUN chmod +x /app/start.sh
 
-# Run the start script
+# --- Bygg frontend (Vue) ---
+FROM node:18-alpine AS frontend
+
+# Sett arbeidskatalog til /frontend
+WORKDIR /frontend
+
+# Kopier kun frontend-filer
+COPY src/package.json src/package-lock.json /frontend/
+RUN npm install
+
+# Kopier resten av frontend-prosjektet
+COPY src /frontend
+
+# Bygg Vue-prosjektet
+RUN npm run build
+
+# --- Kjør backend og frontend sammen ---
+FROM backend AS final
+
+# Kopier bygget frontend fra forrige steg
+COPY --from=frontend /frontend/dist /app/frontend
+
+# Start backend (og evt. frontend via start.sh)
 CMD ["/bin/bash", "/app/start.sh"]
