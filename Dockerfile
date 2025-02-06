@@ -18,5 +18,5 @@ COPY src/main.js /frontend/src/main.js
 # Bygg Vue-prosjektet
 RUN npm run build
 
-# Kopier bygget frontend til backend
-COPY --from=frontend /frontend/dist /app/frontend
+# Gjør den bygde frontend-koden tilgjengelig
+CMD ["npm", "run", "serve"]
