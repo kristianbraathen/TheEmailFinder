@@ -42,7 +42,7 @@ FROM node:18-alpine AS frontend
 WORKDIR /frontend
 
 # Kopier kun package.json og package-lock.json
-COPY src/package.json src/package-lock.json /frontend/
+COPY package.json package-lock.json /frontend/
 
 # Installer npm avhengigheter for frontend
 RUN npm install
