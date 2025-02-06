@@ -46,7 +46,7 @@ COPY src/package.json src/package-lock.json /frontend/
 RUN npm install
 
 # Kopier resten av frontend-prosjektet
-COPY PyFiles /app
+COPY src/PyFiles /app
 
 # Bygg Vue-prosjektet
 RUN npm run build
