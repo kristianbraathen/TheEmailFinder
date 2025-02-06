@@ -5,7 +5,6 @@ set -e
 cd /app/frontend
 npm install
 npm run build
-
 # Flytt bygde filer til backend for å serve dem med Flask
 mv dist /app/backend/static
 
