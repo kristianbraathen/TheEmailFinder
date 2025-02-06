@@ -9,6 +9,7 @@ env:
   DOCKER_IMAGE_NAME: 'krisdocker307/theemailfinder'
   DOCKER_IMAGE_TAG: 'latest'
   DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+
 on:
   push:
     branches: [ "master" ]
@@ -32,15 +33,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Frontend Docker Image
+      - name: Build and Push Frontend Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:latest -f Dockerfile .
-          docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/theemailfinder-frontend:latest -f Dockerfile .
+          docker push ${{ secrets.DOCKER_USERNAME }}/theemailfinder-frontend:latest
 
       - name: Build and Push Backend Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest -f src/PyFiles/Dockerfile .
-          docker push ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/theemailfinder-backend:latest -f src/PyFiles/Dockerfile .
+          docker push ${{ secrets.DOCKER_USERNAME }}/theemailfinder-backend:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,13 +56,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           environment: azurecloud
           allow-no-subscriptions: true
+          
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: |
-            ${{ secrets.DOCKER_USERNAME }}/frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/theemailfinder:latest
+            ${{ secrets.DOCKER_USERNAME }}/theemailfinder-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/theemailfinder-backend:latest
         env:
           DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
