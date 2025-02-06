@@ -50,7 +50,7 @@ RUN npm install
 # Kopier frontend-komponenter og App.vue
 COPY src/components /frontend/src/components
 COPY src/App.vue /frontend/src/App.vue
-
+COPY scr/main.js /frontend/src/main.js
 # Bygg Vue-prosjektet
 RUN npm run build
 
