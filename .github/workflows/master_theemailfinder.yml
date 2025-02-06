@@ -62,6 +62,7 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          docker-compose-file: docker-compose.yml
           images: |
             ${{ secrets.DOCKER_USERNAME }}/theemailfinder-frontend:latest
             ${{ secrets.DOCKER_USERNAME }}/theemailfinder-backend:latest
