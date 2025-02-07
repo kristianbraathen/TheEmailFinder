@@ -1,17 +1,17 @@
 # --- Bygg frontend (Vue) ---
 FROM node:18-alpine AS frontend
 
-# Sett arbeidskatalog til /app/frontend
-WORKDIR /app/frontend
+# Sett arbeidskatalog til /frontend for Vue-prosjektet
+WORKDIR /frontend
 
-# Kopier package.json og package-lock.json først for effektiv caching
-COPY frontend/package.json frontend/package-lock.json ./
+# Kopier package.json og package-lock.json fra toppenivået
+COPY package.json package-lock.json ./
 
 # Installer npm-avhengigheter
 RUN npm install
 
-# Kopier resten av frontend-koden
-COPY frontend ./
+# Kopier resten av frontend-koden fra src/
+COPY src /frontend/src
 
 # Bygg Vue-prosjektet
 RUN npm run build
