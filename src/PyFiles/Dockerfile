@@ -24,7 +24,7 @@ WORKDIR /app
 
 # Installer systemavhengigheter
 RUN apt-get update && apt-get install -y \
-    wget curl unzip nodejs npm \
+    wget curl unzip nodejs npm dos2unix \
     libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
     libgl1-mesa-glx libgtk-3-0 libnss3 libasound2 libxtst6 \
     libatk-bridge2.0-0 libatk1.0-0 libappindicator3-1 \
@@ -57,8 +57,8 @@ ENV PORT=8080
 # Kopier backend-filer
 COPY src/PyFiles /app
 
-# 🛠️ FIX: Fjern Windows-linjeavslutninger i start.sh
-RUN dos2unix /app/start.sh
+# Konverter start.sh til Unix-format og gjør den kjørbar
+RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
 # Gjør start.sh kjørbar
 RUN chmod +x /app/start.sh
