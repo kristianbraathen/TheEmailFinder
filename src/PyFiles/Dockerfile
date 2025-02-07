@@ -47,6 +47,7 @@ RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.ins
 # Eksponer port 8080 for backend
 EXPOSE 8080
 
+ENV CHROME_BIN="/usr/bin/google-chrome"
 # Sett standardport
 ENV PORT=8080
 # Copy start.sh into the container
