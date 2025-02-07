@@ -1,16 +1,17 @@
 # --- Bygg frontend (Vue) ---
 FROM node:18-alpine AS frontend
 
-# Sett arbeidskatalog til /frontend for Vue-prosjektet
-WORKDIR /frontend
+# Sett arbeidskatalog til /app/frontend
+WORKDIR /app/frontend
+
 # Kopier package.json og package-lock.json først for effektiv caching
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 
 # Installer npm-avhengigheter
 RUN npm install
 
 # Kopier resten av frontend-koden
-COPY src ./src
+COPY frontend ./
 
 # Bygg Vue-prosjektet
 RUN npm run build
@@ -18,7 +19,7 @@ RUN npm run build
 # --- Bygg backend (Python) ---
 FROM python:3.9-slim AS backend
 
-# Sett arbeidskatalog til /app for backend
+# Sett arbeidskatalog til /app
 WORKDIR /app
 
 # Installer systemavhengigheter
@@ -34,7 +35,7 @@ RUN apt-get update && apt-get install -y \
     && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm -rf /var/lib/apt/lists/*
 
-
+# Kopier backend-dependensene
 COPY src/PyFiles/requirements.txt /app/requirements.txt
 
 # Installer Python-avhengigheter
@@ -47,15 +48,23 @@ RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.ins
 # Eksponer port 8080 for backend
 EXPOSE 8080
 
+# Sett Chrome-binærsti
 ENV CHROME_BIN="/usr/bin/google-chrome"
+
 # Sett standardport
 ENV PORT=8080
-# Copy start.sh into the container
-COPY src/PyFiles/start.sh /app/start.sh
-# Gjør start.sh kjørbar
-RUN chmod +x /app/start.sh
+
 # Kopier backend-filer
 COPY src/PyFiles /app
+
+# 🛠️ FIX: Fjern Windows-linjeavslutninger i start.sh
+RUN dos2unix /app/start.sh
+
+# Gjør start.sh kjørbar
+RUN chmod +x /app/start.sh
+
+# Kopier bygget frontend fra forrige steg
+COPY --from=frontend /app/frontend/dist /app/frontend
 
 # Start backend
 CMD ["/bin/bash", "/app/start.sh"]
