@@ -64,7 +64,7 @@ RUN dos2unix /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Kopier bygget frontend fra forrige steg
-COPY --from=frontend /app/frontend/dist /app/frontend
+COPY --from=frontend /frontend/dist /app/frontend
 
 # Start backend
 CMD ["/bin/bash", "/app/start.sh"]
