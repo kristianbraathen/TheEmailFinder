@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 # Bygg frontend
 npm install
 npm run build
