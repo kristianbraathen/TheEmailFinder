@@ -1,4 +1,22 @@
-# Bruk Python 3.9 som base for backend
+# --- Bygg frontend (Vue) ---
+FROM node:18-alpine AS frontend
+
+# Sett arbeidskatalog til /frontend for Vue-prosjektet
+WORKDIR /frontend
+
+# Kopier package.json og package-lock.json først for effektiv caching
+COPY package.json package-lock.json ./
+
+# Installer npm-avhengigheter
+RUN npm install
+
+# Kopier resten av frontend-koden
+COPY src ./src
+
+# Bygg Vue-prosjektet
+RUN npm run build
+
+# --- Bygg backend (Python) ---
 FROM python:3.9-slim AS backend
 
 # Sett arbeidskatalog til /app for backend
@@ -14,11 +32,10 @@ RUN apt-get update && apt-get install -y \
     libvulkan1 gnupg unixodbc unixodbc-dev gcc g++ \
     libpq-dev libgconf-2-4 libxss1 libodbc1 \
     && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb \
-    && apt-get -f install -y \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Kopier backend-filer fra PyFiles
+# Kopier backend-filer
 COPY src/PyFiles /app
 
 # Installer Python-avhengigheter
@@ -26,8 +43,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
 # Installer Chrome og Chromedriver
-RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()" \
-    && google-chrome --headless --no-sandbox --disable-gpu --dump-dom https://example.com
+RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
 # Eksponer port 8080 for backend
 EXPOSE 8080
