@@ -34,8 +34,6 @@ RUN apt-get update && apt-get install -y \
     && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Kopier backend-filer
-COPY . /app
 
 COPY src/PyFiles/requirements.txt /app/requirements.txt
 
@@ -51,9 +49,11 @@ EXPOSE 8080
 
 # Sett standardport
 ENV PORT=8080
-
+# Copy start.sh into the container
+COPY ../start.sh /app/start.sh
 # Gjør start.sh kjørbar
 RUN chmod +x /app/start.sh
-
+# Kopier backend-filer
+COPY . /app
 # Start backend
 CMD ["/bin/bash", "/app/start.sh"]
