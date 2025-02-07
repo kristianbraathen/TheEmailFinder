@@ -37,10 +37,10 @@ RUN apt-get update && apt-get install -y \
 # Kopier backend-filer
 COPY . /app
 
-COPY src/pyfiles/requirements.txt /app/requirements.txt
+COPY src/PyFiles/requirements.txt /app/requirements.txt
 
 # Installer Python-avhengigheter
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install --no-cache-dir -r /app/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
 # Installer Chrome og Chromedriver
