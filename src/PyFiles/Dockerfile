@@ -3,7 +3,6 @@ FROM node:18-alpine AS frontend
 
 # Sett arbeidskatalog til /frontend for Vue-prosjektet
 WORKDIR /frontend
-
 # Kopier package.json og package-lock.json først for effektiv caching
 COPY package.json package-lock.json ./
 
