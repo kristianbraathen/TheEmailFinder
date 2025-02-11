@@ -1,7 +1,6 @@
 # --- Bygg frontend (Vue) ---
 FROM node:18-alpine AS frontend
 
-# Sett arbeidskatalog til /frontend for Vue-prosjektet
 WORKDIR /frontend
 
 # Kopier package.json og package-lock.json fra toppenivået
@@ -19,7 +18,6 @@ RUN npm run build
 # --- Bygg backend (Python) ---
 FROM python:3.9-slim AS backend
 
-# Sett arbeidskatalog til /app
 WORKDIR /app
 
 # Installer systemavhengigheter
@@ -35,11 +33,11 @@ RUN apt-get update && apt-get install -y \
     && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Kopier backend-dependensene
-COPY src/PyFiles/requirements.txt /app/requirements.txt
+# Kopier hele prosjektet, inkludert package.json
+COPY . /app
 
-# Installer Python-avhengigheter
-RUN pip install --no-cache-dir -r /app/requirements.txt \
+# Installer backend-avhengigheter
+RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
 # Installer Chrome og Chromedriver
@@ -50,18 +48,10 @@ EXPOSE 8080
 
 # Sett Chrome-binærsti
 ENV CHROME_BIN="/usr/bin/google-chrome"
-
-# Sett standardport
 ENV PORT=8080
-
-# Kopier backend-filer
-COPY src/PyFiles /app
 
 # Konverter start.sh til Unix-format og gjør den kjørbar
 RUN dos2unix /app/start.sh && chmod +x /app/start.sh
-
-# Gjør start.sh kjørbar
-RUN chmod +x /app/start.sh
 
 # Kopier bygget frontend fra forrige steg
 COPY --from=frontend /frontend/dist /app/frontend
