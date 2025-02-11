@@ -50,6 +50,8 @@ EXPOSE 8080
 ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV PORT=8080
 
+COPY src/PyFiles/start.sh /app/start.sh
+
 # Konverter start.sh til Unix-format og gjør den kjørbar
 RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
