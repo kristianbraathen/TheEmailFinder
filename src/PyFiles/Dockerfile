@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y \
 # Kopier hele prosjektet, inkludert package.json
 COPY . /app
 # Sett riktige rettigheter på filene
-RUN chmod -R 755 /app && chmod -R 755 /frontend
+RUN chmod -R 755 /app
 
 # Installer backend-avhengigheter
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
