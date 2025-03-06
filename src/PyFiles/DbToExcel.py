@@ -1,21 +1,18 @@
 import pandas as pd
 from flask import Flask, send_file, Blueprint, request
 import io
-import pyodbc
+import psycopg2
 import openpyxl
+import os
 
 download_blueprint = Blueprint('download', __name__)
 
 # Database-tilkobling
 def get_db_connection():
-    conn = pyodbc.connect(
-        "DRIVER={ODBC Driver 17 for SQL Server};"
-        "SERVER=(localdb)\\MSSQLLocalDB;"  # Erstatt med din server
-        "DATABASE=master;"  # Erstatt med din database
-        "Trusted_Connection=yes;"
+    conn = psycopg2.connect(
+        os.getenv('DATABASE_CONNECTION_STRING')  # Hent verdien fra miljøvariabelen
     )
     return conn
-
 @download_blueprint.route('/export_to_excel', methods=['GET'])
 def export_to_excel():
     try:
