@@ -21,26 +21,27 @@ def create_dynamic_model(table_name, headers):
     """
     Create a SQLAlchemy model dynamically based on the headers from the Excel file.
     """
-    # Use db's engine to inspect the tables
-    engine = db.engine  # Use db from the app context
-    inspector = inspect(engine)
-
-    # Check if the table already exists, and append a timestamp if so
-    if table_name in inspector.get_table_names():
-        table_name = f"{table_name}_{int(time.time())}"  # Append a timestamp to the table name
-
-    # Create columns dynamically based on headers
-    columns = {
-        '__tablename__': table_name,
-        'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
-    }
-
-    for header in headers:
-        # Add columns dynamically based on the header names
-        columns[header] = Column(String(255), nullable=True)
+         # Use db's engine to inspect the tables
+     engine = db.engine  # Use db from the app context
+     metadata = MetaData()
+     metadata.reflect(bind=engine)
+     inspector = inspect(engine)
+    
+     # Check if the table already exists; do not drop if it already exists.
+     if table_name in inspector.get_table_names():
+         table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
+     else:
+         # Create columns dynamically based on headers
+         columns = {
+             '__tablename__': table_name,
+             'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
+         }
+         for header in headers:
+            # Add columns dynamically based on the header names
+             columns[header] = Column(String(255), nullable=True)
 
     # Create and return a dynamic model class
-    return type(table_name, (db.Model,), columns)
+     return type(table_name, (db.Model,), columns)
 
 
 @upload_blueprint.route('/upload-excel', methods=['POST'])
@@ -64,6 +65,8 @@ def upload_excel():
 
         # Extract headers
         headers = [str(cell.value).strip() if cell.value else f"Column_{i}" for i, cell in enumerate(sheet[1], start=1)]
+        # Exclude headers that start with "Column"
+        headers = [header for header in headers if not header.startswith("Column")]
 
         # Create a dynamic model
         table_name = 'imported_table'
