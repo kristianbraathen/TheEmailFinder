@@ -1,6 +1,6 @@
 import time
 import requests
-import pyodbc  # For å koble til databasen
+import psycopg2  # For å koble til databasen
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -108,12 +108,12 @@ def extract_email_selenium(url):
 # Funksjon for å søke etter firmaer fra databasen og vise e-poster
 def search_emails_and_display():
     try:
-        with pyodbc.connect(connection_string) as conn:
+        with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             query = """
-            SELECT [Org.nr], [firmanavn]
-            FROM [dbo].[imported_table]
-            WHERE status = 'aktiv selskap' AND [E-post 1] IS NULL
+            SELECT "Org.nr", firmanavn
+            FROM imported_table
+            WHERE status = 'aktiv selskap' AND "E-post 1" IS NULL
             """
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -181,7 +181,7 @@ def update_email():
 
     try:
         query = text(
-            "UPDATE [dbo].[imported_table] SET [E-post 1] = :email WHERE [Org.nr] = :org_nr"
+            'UPDATE imported_table SET "E-post 1" = :email WHERE "Org.nr" = :org_nr'
         )
         db.session.execute(query, {"email": email, "org_nr": org_nr})
         db.session.commit()
