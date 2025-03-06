@@ -1,6 +1,6 @@
 import requests
 from datetime import datetime, timedelta
-import pyodbc
+import psycopg2
 from flask import Flask, jsonify, Blueprint
 from Db import db
 import os
@@ -45,7 +45,7 @@ def process_organization_with_single_call(org_nr):
             status = "aktiv selskap"
 
         # Oppdater statusfeltet i databasen
-        with pyodbc.connect(connection_string) as conn:
+        with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE [dbo].[imported_table]
@@ -60,7 +60,7 @@ def process_organization_with_single_call(org_nr):
             epost = data.get("epostadresse")
 
             if epost:
-                with pyodbc.connect(connection_string) as conn:
+                with psycopg2.connect(connection_string) as conn:
                     cursor = conn.cursor()
                     cursor.execute("""
                         UPDATE [dbo].[imported_table]
@@ -110,7 +110,7 @@ def process_and_clean_organizations():
 
     try:
         # Hent org.nr fra tabellen
-        with pyodbc.connect(connection_string) as conn:
+        with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT [Org.nr] FROM [dbo].[imported_table]
