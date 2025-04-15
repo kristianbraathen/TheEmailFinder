@@ -19,7 +19,12 @@ chromedriver_autoinstaller.install()
 
 # Set up Chrome with necessary options
 options = Options()
-options.binary_location = os.getenv('CHROME_BIN')
+
+chrome_path = os.getenv('CHROME_BIN') or "/usr/bin/google-chrome"
+if not os.path.exists(chrome_path):
+    chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+
+options.binary_location = chrome_path
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-webusb")
 options.add_argument("--disable-extensions")

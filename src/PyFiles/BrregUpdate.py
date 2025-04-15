@@ -2,7 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import psycopg2
 from flask import Flask, jsonify, Blueprint
-from Db import db
+from .Db import db
 import os
 
 api2_blueprint = Blueprint('api2', __name__)

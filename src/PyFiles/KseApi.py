@@ -8,7 +8,7 @@ from flask import Flask, jsonify, Blueprint, request
 import re
 from urllib.parse import unquote
 from threading import Lock
-from Db import db
+from .Db import db, get_db_connection
 import chromedriver_autoinstaller
 import os
 import tempfile
@@ -17,29 +17,28 @@ import tempfile
 api3_blueprint = Blueprint('api3', __name__)
 process_lock = Lock()
 process_running = False  # Global flag to track the process state 
-connection_string = os.getenv('DATABASE_CONNECTION_STRING')
-
+#connection_string = os.getenv('DATABASE_CONNECTION_STRING')
+connection_string =  get_db_connection()
 #Install ChromeDriver automatically if not set
 chromedriver_autoinstaller.install()
 
+chrome_options = Options()
 # Get ChromeDriver path from environment variable (if set)
-driver_path = os.getenv('CHROMEDRIVER_PATH')
+if os.path.exists("/usr/bin/google-chrome"):  # Docker/Linux
+    chrome_options.binary_location = "/usr/bin/google-chrome"
+else:  # Lokalt Windows
+    chrome_options.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
 
-# If CHROMEDRIVER_PATH is not set, use the default path provided by chromedriver_autoinstaller
-if not driver_path:
-    driver_path = chromedriver_autoinstaller.install()
 
 # Konfigurasjon for Selenium
-chrome_service = Service(driver_path)
-chrome_options = Options()
 
 # Specify the location of your Chrome binary (optional if it's in the default path)
-chrome_options.binary_location = os.getenv('CHROME_BIN')  # Path to the Chrome binary (if needed)
+chrome_options.binary_location = os.getenv('CHROME_BIN', "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe")  # Path to the Chrome binary (if needed)
 
 # Set Chrome options
 # Headless mode (if running in a server or CI environment)
 chrome_options.add_argument("--headless=new")
-
+chrome_options.add_argument("--remote-debugging-port=9222")
 # General settings for server/container environments
 chrome_options.add_argument("--disable-gpu")  # Disable GPU (important in headless environments)
 chrome_options.add_argument("--no-sandbox")  # Avoid sandboxing issues in containers
@@ -63,7 +62,7 @@ chrome_options.add_argument("--disable-default-apps")
 # Ensure a unique, isolated session is created
 chrome_options.add_argument("--disable-session-crashed-bubble")  # Disable "restore session" dialog
 # Initialize the WebDriver
-driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+driver = webdriver.Chrome(options=chrome_options)
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
@@ -170,12 +169,9 @@ def update_email():
         if not org_nr or not email:
             return jsonify({"error": "Org.nr and email are required."}), 400
 
-        # Perform the update in the database
-       query = """
-            UPDATE imported_table
-            SET "E-post 1" = %s
-            WHERE "Org.nr" = %s
-        """
+        query = text(
+            'UPDATE imported_table SET "E-post 1" = :email WHERE "Org.nr" = :org_nr'
+        )
         db.session.execute(query, {"email": email, "org_nr": org_nr})
         db.session.commit()
 

@@ -4,11 +4,11 @@ from werkzeug.utils import secure_filename
 import os
 import openpyxl
 import traceback
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
-from Db import db
+from .Db import db
 
 # Initialize the declarative base
 Base = declarative_base()
@@ -21,28 +21,27 @@ def create_dynamic_model(table_name, headers):
     """
     Create a SQLAlchemy model dynamically based on the headers from the Excel file.
     """
-         # Use db's engine to inspect the tables
-     engine = db.engine  # Use db from the app context
-     metadata = MetaData()
-     metadata.reflect(bind=engine)
-     inspector = inspect(engine)
+    # Use db's engine to inspect the tables
+    engine = db.engine  # Use db from the app context
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
+    inspector = inspect(engine)
     
-     # Check if the table already exists; do not drop if it already exists.
-     if table_name in inspector.get_table_names():
-         table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
-     else:
-         # Create columns dynamically based on headers
-         columns = {
-             '__tablename__': table_name,
-             'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
-         }
-         for header in headers:
+    # Check if the table already exists; do not drop if it already exists.
+    if table_name in inspector.get_table_names():
+        table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
+    else:
+        # Create columns dynamically based on headers
+        columns = {
+            '__tablename__': table_name,
+            'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
+        }
+        for header in headers:
             # Add columns dynamically based on the header names
-             columns[header] = Column(String(255), nullable=True)
+            columns[header] = Column(String(255), nullable=True)
 
-    # Create and return a dynamic model class
-     return type(table_name, (db.Model,), columns)
-
+        # Create and return a dynamic model class
+        return type(table_name, (db.Model,), columns)
 
 @upload_blueprint.route('/upload-excel', methods=['POST'])
 def upload_excel():

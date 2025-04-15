@@ -1,8 +1,10 @@
+# macOS
 .DS_Store
-node_modules
-/dist
 
-# local env files
+# Node.js
+node_modules
+
+# Local env files
 .env.local
 .env.*.local
 
@@ -21,3 +23,19 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Python __pycache__ and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Dist or build output
+dist/
+build/

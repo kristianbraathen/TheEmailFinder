@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from flask import Flask, jsonify, Blueprint, request
-from Db import db
+from .Db import db
 import re
 from urllib.parse import unquote
 from threading import Lock
@@ -36,7 +36,10 @@ chrome_service = Service(driver_path)
 chrome_options = Options()
 
 # Specify the location of your Chrome binary (optional if it's in the default path)
-chrome_options.binary_location = os.getenv('CHROME_BIN')  # Path to the Chrome binary (if needed)
+chrome_path = os.getenv('CHROME_BIN') or "/usr/bin/google-chrome"
+if not os.path.exists(chrome_path):
+    chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+  # Path to the Chrome binary (if needed)
 
 # Set Chrome options
 # Headless mode (if running in a server or CI environment)

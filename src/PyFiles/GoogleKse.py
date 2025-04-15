@@ -8,7 +8,7 @@ from flask import Flask, jsonify, Blueprint, request,current_app
 import re
 from urllib.parse import unquote
 from threading import Lock
-from Db import db
+from .Db import db, get_db_connection
 import chromedriver_autoinstaller
 import os
 import tempfile
@@ -21,7 +21,7 @@ process_running = False  # Global flag to track the process state
 
 #Install ChromeDriver automatically if not set
 #chromedriver_autoinstaller.install()
-connection_string =  os.getenv('DATABASE_CONNECTION_STRING')
+connection_string =  get_db_connection()
 driver_path = chromedriver_autoinstaller.install()
 
 # Konfigurasjon for Selenium

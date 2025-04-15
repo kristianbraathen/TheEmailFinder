@@ -4,12 +4,17 @@
 
         <!-- Knapp for å starte oppdatering -->
         <button @click="processAndCleanOrganizations">Start oppdatering fra Brønnøysund</button>
-        <button @click="openPopup">Facebook Scrap</button>
+        <button @click="openPopup3">Google Search</button>
+        <button @click="openPopup1">Facebook Scrap</button>
         <button @click="openPopup2">1881 Scrap</button>
+
+        <GoogleKsePopup :isVisible="showPopup3"
+                        :companies="companies"
+                        @close="closePopup3" />
         <!-- KSEPopUP popup -->
         <KSEPopUP :isVisible="showPopup1"
                   :companies="companies"
-                  @close="closePopup" />
+                  @close="closePopup1" />
         <!-- Kse1881PopUP popup -->
         <Kse1881PopUP :isVisible="showPopup2"
                       :companies="companies"
@@ -21,9 +26,13 @@
         </div>
 
         <!-- Resultatvisning -->
-        <div v-if="status">
+        <div v-if="processingData">
             <h2>Status</h2>
-            <p>{{ status }}</p>
+            <p>{{ processingData.status }}</p>
+            <p>Updated: {{ processingData.details.updated_count }}</p>
+            <p>No email: {{ processingData.details.no_email_count }}</p>
+            <p>Errors: {{ processingData.details.error_count }}</p>
+
         </div>
 
         <!-- Vis resultater hvis søket lykkes -->
@@ -45,16 +54,18 @@
     import KSEPopUP from "./KSEPopUP.vue";  // Importere KSEPopUP-komponenten
     import Kse1881PopUP from "./Kse1881PopUP.vue";  // Importere Kse1881PopUP-komponenten
     import ExcelOut from "./ExcelOut.vue";  // Importere ExcelOut-komponenten
+    import GoogleKsePopup from "./GoogleKsePopup.vue";
 
     export default {
         data() {
             return {
-                status: null, // Status for API-respons
+                processingData: null, // Status for API-respons
                 search_by_company_name: "", // For manuelt søk
                 searchResults: null, // Resultater fra manuelt søk
                 isUpdating: false, // For å deaktivere knappen under prosessering
                 showPopup1: false,
                 showPopup2: false,// Tilstand for å vise popup
+                showPopup3: false,
                 companies: [], // Selskapsdata for popup
             };
         },
@@ -63,6 +74,7 @@
             KSEPopUP,
             Kse1881PopUP,
             ExcelOut,
+            GoogleKsePopup
         },
         methods: {
             async processAndCleanOrganizations() {
@@ -70,16 +82,19 @@
                 this.status = "Pending..."; // Startstatus
 
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
+                    const response = await axios.post("http://localhost:8080/BrregUpdate/process_and_clean_organizations");
 
-                    if (response.data.status) {
-                        this.status = response.data.status;
-                    } else {
-                        this.status = "Processing completed.";
-                    }
+                    // Sett all data som ett objekt
+                    this.processingData = {
+                        status: response.data.status,
+                        details: response.data.details
+                    };
                 } catch (error) {
                     console.error("Feil under prosessering:", error);
-                    this.status = "En feil oppsto under prosesseringen.";
+                    this.processingData = {
+                        status: "En feil oppsto under prosesseringen.",
+                        details: null
+                    };
                 } finally {
                     this.isUpdating = false; // Aktiver knappen igjen
                 }
@@ -92,7 +107,7 @@
 
                 try {
                     const response = await axios.get(
-                        `https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SeleniumScrap/search_by_company_name?company_name=${this.search_by_company_name}`
+                        `http://localhost:8080/SeleniumScrap/search_by_company_name?company_name=${this.search_by_company_name}`
                     );
                     this.status = response.data.status;
                     this.searchResults = response.data;
@@ -101,18 +116,24 @@
                     this.status = "Feil ved manuell søk.";
                     this.searchResults = null;
                 }
-            },           
-            openPopup() {
+            },
+            openPopup1() {
                 this.showPopup1 = true;
             },
             openPopup2() {
-                this.showPopup2= true;
+                this.showPopup2 = true;
             },
-            closePopup() {
+            closePopup1() {
                 this.showPopup1 = false; // Skjul popup når den lukkes
             },
             closePopup2() {
                 this.showPopup2 = false; // Skjul popup når den lukkes
+            },
+            openPopup3() {
+                this.showPopup3 = true;
+            },
+            closePopup3() {
+                this.showPopup3 = false;
             },
         },
     };
@@ -137,6 +158,9 @@
         margin-top: 20px;
     }
 
+    p {
+        color: #e0e0e0
+    }
     /* Container for innhold */
     div {
         max-width: 800px;

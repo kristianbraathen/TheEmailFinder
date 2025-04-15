@@ -1,4 +1,4 @@
-# --- Bygg frontend (Vue) ---
+# --- Bygg frontend ---
 FROM node:18-alpine AS frontend
 
 WORKDIR /frontend
@@ -15,7 +15,7 @@ COPY src /frontend/src
 # Bygg Vue-prosjektet
 RUN npm run build
 
-# --- Bygg backend (Python) ---
+# --- Bygg backend ---
 FROM python:3.9-slim AS backend
 
 WORKDIR /app
@@ -28,13 +28,17 @@ RUN apt-get update && apt-get install -y \
     libatk-bridge2.0-0 libatk1.0-0 libappindicator3-1 \
     libgdk-pixbuf2.0-0 libgbm1 xdg-utils fonts-liberation \
     libvulkan1 gnupg unixodbc unixodbc-dev gcc g++ \
-    libpq-dev libgconf-2-4 libxss1 libodbc1 \
-    && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get -f install -y \
-    && rm -rf /var/lib/apt/lists/*
+    libpq-dev libgconf-2-4 libxss1 libodbc1 bash && \
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    dpkg -i google-chrome-stable_current_amd64.deb || true && \
+    apt-get install -f -y && \
+    rm google-chrome-stable_current_amd64.deb && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # Kopier hele prosjektet, inkludert package.json
 COPY . /app
+
 # Sett riktige rettigheter på filene
 RUN chmod -R 755 /app
 
@@ -42,23 +46,19 @@ RUN chmod -R 755 /app
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
-# Installer Chrome og Chromedriver
-RUN python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
+# Kopier frontend-bygg fra tidligere steg til Flask static-mappe
+COPY --from=frontend /frontend/dist /app/dist
 
-# Eksponer port 8080 for backend
-EXPOSE 8080
-
-# Sett Chrome-binærsti
-ENV CHROME_BIN="/usr/bin/google-chrome"
-ENV PORT=8080
-
-COPY src/PyFiles/start.sh /app/start.sh
-
-# Konverter start.sh til Unix-format og gjør den kjørbar
+# Kopier start.sh og gjør den kjørbar
+COPY start.sh /app/start.sh
 RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
-# Kopier bygget frontend fra forrige steg
-COPY --from=frontend /frontend/dist /app/frontend
+# Sett miljøvariabler
+ENV CHROME_BIN="/usr/bin/google-chrome"
+ENV PORT=8080
+ENV PYTHONPATH=/app/src/PyFiles
 
-# Start backend
-CMD ["/bin/bash", "/app/start.sh"]
+EXPOSE 8080
+
+# Start appen
+CMD ["/app/start.sh"]
