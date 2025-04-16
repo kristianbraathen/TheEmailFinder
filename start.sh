@@ -6,7 +6,7 @@ PORT=${PORT:-8080}
 echo "Using PORT: $PORT"
 
 # Oppdater Chromedriver
-python -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
+python3 -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"
 
 # Start backend (Flask via Gunicorn)
 cd /app
