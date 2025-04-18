@@ -81,5 +81,5 @@ def health_check():
 
 if __name__ == "__main__":
     # Hent portnummer fra miljøvariabelen, eller bruk 8080 som standard
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT",80))
     app.run(host="0.0.0.0", port=port, debug=True)

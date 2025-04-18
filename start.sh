@@ -2,7 +2,7 @@
 set -e
 
 # Sett standardport hvis PORT ikke er definert
-PORT=${PORT:-8080}
+PORT=80
 echo "Using PORT: $PORT"
 
 # Oppdater Chromedriver

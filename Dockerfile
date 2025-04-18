@@ -58,7 +58,7 @@ ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV PORT=8080
 ENV PYTHONPATH=/app/src/PyFiles
 
-EXPOSE 8080
+EXPOSE 80
 
 # Start appen
 CMD ["/app/start.sh"]
