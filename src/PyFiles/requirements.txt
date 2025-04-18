@@ -87,4 +87,3 @@ yarl==1.9.2
 gunicorn==20.1.0
 chromedriver-autoinstaller
 azure-identity
-psycopg2-binary
