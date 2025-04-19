@@ -6,8 +6,9 @@ PORT=${PORT:-80}
 echo "Using PORT: $PORT"
 
 # Opprett /temp-mappen (om nødvendig) og sett riktige rettigheter
-mkdir -p /temp
-chmod -R 777 /temp
+mkdir -p /app/temp
+chmod -R 777 /app/temp
+
 echo "Temp folder created and permissions set."
 
 # (Valgfritt) Oppdater Chromedriver hvis det er nødvendig
