@@ -49,16 +49,18 @@ RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
 # Kopier frontend-bygg fra tidligere steg til Flask static-mappe
 COPY --from=frontend /frontend/dist /app/dist
 
+RUN ls -la /app/dist
+
 # Kopier start.sh og gjør den kjørbar
 COPY start.sh /app/start.sh
 RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
 # Sett miljøvariabler
 ENV CHROME_BIN="/usr/bin/google-chrome"
-ENV PORT=8080
+ENV PORT=80
 ENV PYTHONPATH=/app/src/PyFiles
 
 EXPOSE 80
 
 # Start appen
-CMD ["/app/start.sh"]
+CMD ["bash", "/app/start.sh"]
