@@ -33,6 +33,7 @@ Thumbs.db
 
 # Ignore build artifacts or temporary files that aren't needed
 build/
+venv/
 
 # Don't ignore important files like package.json and package-lock.json
 !package.json
@@ -47,3 +48,4 @@ build/
 .vs/
 .idea/
 .vscode/
+
