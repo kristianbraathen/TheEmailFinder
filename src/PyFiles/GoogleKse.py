@@ -1,10 +1,10 @@
 import time
 import requests
-import psycopg2 # For å koble til databasen
+import psycopg2
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from flask import Flask, jsonify, Blueprint, request,current_app
+from flask import Flask, jsonify, Blueprint, request, current_app
 import re
 from urllib.parse import unquote
 from threading import Lock
@@ -17,48 +17,31 @@ from sqlalchemy.sql import text
 # Flask-app
 api6_blueprint = Blueprint('api6', __name__)
 process_lock = Lock()
-process_running = False  # Global flag to track the process state 
+process_running = False  # Global flag to track the process state
 
-#Install ChromeDriver automatically if not set
-#chromedriver_autoinstaller.install()
-connection_string =  get_db_connection()
+# Install ChromeDriver automatically if not set
+connection_string = get_db_connection()
 driver_path = chromedriver_autoinstaller.install()
 
 # Konfigurasjon for Selenium
-chrome_service = Service()
-chrome_options = Options()
 chrome_service = Service(executable_path=driver_path)
-# Specify the location of your Chrome binary (optional if it's in the default path)
-#chrome_options.binary_location = os.getenv('CHROME_BIN')  # Path to the Chrome binary (if needed)
+chrome_options = Options()
 
 # Set Chrome options
-# Headless mode (if running in a server or CI environment)
 chrome_options.add_argument("--headless=new")
-
-# General settings for server/container environments
 chrome_options.add_argument("--disable-gpu")  # Disable GPU (important in headless environments)
 chrome_options.add_argument("--no-sandbox")  # Avoid sandboxing issues in containers
 chrome_options.add_argument("--disable-extensions")  # Disable extensions
 chrome_options.add_argument("--disable-dev-shm-usage")  # Address shared memory issues in Docker
 chrome_options.add_argument("--disable-software-rasterizer")  # Disable software rendering
-# Language and regional settings
 chrome_options.add_argument("--lang=en-NO")  # Norwegian language
-# Safe rendering mode
-chrome_options.add_argument("--enable-unsafe-swiftshader")  # SwiftShader for software rendering fallback (optional)
-# Experimental: User data settings
-# This is what you currently have
+chrome_options.add_argument("--enable-unsafe-swiftshader")  # SwiftShader for software rendering fallback
 chrome_options.add_argument("--disable-user-data-dir")  # Ensure no specific user profile is loaded
-# Add this to avoid DBus-related errors
 chrome_options.add_argument("--disable-dev-tools")  # Disable developer tools
 chrome_options.add_argument("--remote-debugging-port=0")  # Prevent remote debugging
-# Add extra logging for debugging purposes
 chrome_options.add_argument("--log-level=3")  # Suppress logs (INFO, WARNING, and ERROR logs)
-# Optional: Disable default apps
-chrome_options.add_argument("--disable-default-apps")
-# Ensure a unique, isolated session is created
+chrome_options.add_argument("--disable-default-apps")  # Disable default apps
 chrome_options.add_argument("--disable-session-crashed-bubble")  # Disable "restore session" dialog
-# Initialize the WebDriver
-driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
@@ -79,6 +62,7 @@ def google_custom_search(query):
 # Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
+        # Initialize driver inside the function to avoid global instantiation
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
         driver.get(url)
         time.sleep(5)  # Bytt gjerne med WebDriverWait for bedre ytelse

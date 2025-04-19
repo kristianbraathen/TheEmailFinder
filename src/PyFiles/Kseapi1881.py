@@ -1,6 +1,6 @@
 import time
 import requests
-import psycopg2  # For å koble til databasen
+import psycopg2
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -39,48 +39,29 @@ chrome_options = Options()
 chrome_path = os.getenv('CHROME_BIN') or "/usr/bin/google-chrome"
 if not os.path.exists(chrome_path):
     chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
-  # Path to the Chrome binary (if needed)
 
 # Set Chrome options
-# Headless mode (if running in a server or CI environment)
 chrome_options.add_argument("--headless=new")
-
-# General settings for server/container environments
-chrome_options.add_argument("--disable-gpu")  # Disable GPU (important in headless environments)
-chrome_options.add_argument("--no-sandbox")  # Avoid sandboxing issues in containers
-chrome_options.add_argument("--disable-extensions")  # Disable extensions
-chrome_options.add_argument("--disable-dev-shm-usage")  # Address shared memory issues in Docker
-chrome_options.add_argument("--disable-software-rasterizer")  # Disable software rendering
-
-# Language and regional settings
-chrome_options.add_argument("--lang=en-NO")  # Norwegian language
-
-# Safe rendering mode
-chrome_options.add_argument("--enable-unsafe-swiftshader")  # SwiftShader for software rendering fallback (optional)
-
-# Experimental: User data settings
-# This is what you currently have
-chrome_options.add_argument("--disable-user-data-dir")  # Ensure no specific user profile is loaded
-
-# Add this to avoid DBus-related errors
-chrome_options.add_argument("--disable-dev-tools")  # Disable developer tools
-chrome_options.add_argument("--remote-debugging-port=0")  # Prevent remote debugging
-
-# Add extra logging for debugging purposes
-chrome_options.add_argument("--log-level=3")  # Suppress logs (INFO, WARNING, and ERROR logs)
-
-# Optional: Disable default apps
-chrome_options.add_argument("--disable-default-apps")
-
-# Ensure a unique, isolated session is created
-chrome_options.add_argument("--disable-session-crashed-bubble")  # Disable "restore session" dialog
-
-# Initialize the WebDriver
-driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+chrome_options.add_argument("--disable-gpu")  
+chrome_options.add_argument("--no-sandbox")  
+chrome_options.add_argument("--disable-extensions")  
+chrome_options.add_argument("--disable-dev-shm-usage")  
+chrome_options.add_argument("--disable-software-rasterizer")  
+chrome_options.add_argument("--lang=en-NO")  
+chrome_options.add_argument("--enable-unsafe-swiftshader")  
+chrome_options.add_argument("--disable-user-data-dir")  
+chrome_options.add_argument("--disable-dev-tools")  
+chrome_options.add_argument("--remote-debugging-port=0")  
+chrome_options.add_argument("--log-level=3")  
+chrome_options.add_argument("--disable-default-apps")  
+chrome_options.add_argument("--disable-session-crashed-bubble")  
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
 CSE_ID = "432c6f0a821194e10"
+
+def create_driver():
+    return webdriver.Chrome(service=chrome_service, options=chrome_options)
 
 # Funksjon for å gjøre et søk via Google Custom Search API
 def google_custom_search(query):
@@ -97,9 +78,9 @@ def google_custom_search(query):
 # Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
-        driver = webdriver.Chrome(service=chrome_service, options=chrome_options, executable_path=driver_path)
+        driver = create_driver()  # Opprett WebDriver her, ikke globalt
         driver.get(url)
-        time.sleep(5)  # Bytt gjerne med WebDriverWait for bedre ytelse
+        time.sleep(5)  
         page_source = driver.page_source
         emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
         driver.quit()
@@ -123,30 +104,26 @@ def search_emails_and_display():
             global process_running
             results = []
             for row in rows:
-                if not process_running:  # Sjekk om prosessen skal stoppes
+                if not process_running:  
                     print("Prosessen er stoppet.")
                     break
 
                 org_nr, company_name = row
-
-                # Google Custom Search med firmanavn og Norge
                 search_query = f'"{company_name}" "Norge" '
                 print(f"Søker med query:{search_query}")
                 
                 search_results = google_custom_search(search_query)
                 all_emails = []
                 for url in search_results:
-                    if not process_running:  # Sjekk om prosessen skal stoppes
+                    if not process_running:  
                         print("Prosessen er stoppet.")
                         break
                     emails = extract_email_selenium(url)
                     all_emails.extend(emails)
 
-                # Fjern duplikater fra e-postene
                 unique_emails = set(all_emails)
                 email_list = list(unique_emails)
 
-                # Lagre resultatene
                 if email_list:
                     results.append({
                         "org_nr": org_nr,
@@ -159,14 +136,13 @@ def search_emails_and_display():
         print(f"Feil: {e}")
         return []
 
-# Flask-endepunkt for å søke etter e-poster
 @api5_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint_1881():
     global process_running
-    if not process_running:  # Kontroller før du setter prosessen som kjørende
+    if not process_running:  
         return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
 
-    process_running = True  # Sett prosessen som kjørende
+    process_running = True  
     try:
         results = search_emails_and_display()
         return jsonify(results), 200
@@ -197,12 +173,11 @@ def update_email():
 @api5_blueprint.route('/start_process', methods=['POST'])
 def start_process_1881():
     global process_running
-    with process_lock:  # Sikrer trådtrygg tilgang
+    with process_lock:  
         if process_running:
             return jsonify({"status": "Process is already running"}), 400
         try:
             process_running = True
-            # Start prosessen her
             return jsonify({"status": "Process started successfully"}), 200
         except Exception as e:
             process_running = False
@@ -216,7 +191,6 @@ def stop_process_1881():
             return jsonify({"status": "Process is not running"}), 400
         try:
             process_running = False
-            # Stopp prosessen her
             return jsonify({"status": "Process stopped successfully"}), 200
         except Exception as e:
             process_running = True
