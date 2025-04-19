@@ -10,4 +10,4 @@ echo "Using PORT: $PORT"
 
 # Start backend (Flask via Gunicorn)
 cd /app
-exec gunicorn --bind 0.0.0.0:$PORT  src.PyFiles.app:app
+exec gunicorn --bind 0.0.0.0:$PORT src.PyFiles.app:app --timeout 120
