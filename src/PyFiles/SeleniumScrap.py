@@ -98,16 +98,3 @@ def find_emails_on_facebook(company_name):
             driver.quit()
         except:
             pass
-
-    
-@api4_blueprint.route('/search_by_company_name', methods=['GET'])
-def search_emails():
-    company_name = request.args.get('company_name')
-    
-    if not company_name:
-        return jsonify({"error": "Company name is required."}), 400
-    
-    # Call the scraping function
-    emails = find_emails_on_facebook(company_name)
-    
-    return jsonify({"emails": emails})
