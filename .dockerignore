@@ -33,26 +33,17 @@ Thumbs.db
 
 # Ignore build artifacts or temporary files that aren't needed
 build/
-dist/
-*.bak
 
 # Don't ignore important files like package.json and package-lock.json
 !package.json
 !package-lock.json
 
-# Ignore node_modules and virtual environment
-node_modules/
-venv/
-
 # Ignore Python and Node.js related metadata
 *.pyc
 *.pyo
 *.pyd
-*.log
 
 # Ignore other common non-essentials
-*.md
-*.git
 .vs/
 .idea/
 .vscode/
