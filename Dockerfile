@@ -63,4 +63,4 @@ ENV PYTHONPATH=/app/src/PyFiles
 EXPOSE 80
 
 # Start appen
-CMD ["bash", "/app/start.sh"]
+CMD ["/app/start.sh"]
