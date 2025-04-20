@@ -9,7 +9,7 @@ db = SQLAlchemy()
 def get_database_uri():
     """Bygger en database-URI med vanlig bruker/pass-tilkobling."""
     user = "appbruker"  # Bruker du opprettet
-    password = "SterktPassord123!"  # Passordet for brukeren
+    password = "SterktPassord123"  # Passordet for brukeren
     host = "theemailfinderserver.postgres.database.azure.com"
     database = "theemailfinder_database"
     
