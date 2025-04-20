@@ -83,9 +83,9 @@ def search_emails_and_display():
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             query = """
-            SELECT "Org.nr", "firmanavn"
+            SELECT "org_nr", "firmanavn"
             FROM imported_table
-            WHERE status = 'aktiv selskap' AND "E-post 1" IS NULL
+            WHERE status = 'aktiv selskap' AND "e_post_1" IS NULL
             """
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -154,7 +154,7 @@ def update_email():
             return jsonify({"error": "Org.nr and email are required."}), 400
 
         query = text(
-            'UPDATE imported_table SET "E-post 1" = :email WHERE "Org.nr" = :org_nr'
+            'UPDATE imported_table SET "e_post_1" = :email WHERE "org_nr" = :org_nr'
         )
         db.session.execute(query, {"email": email, "org_nr": org_nr})
         db.session.commit()

@@ -70,7 +70,12 @@ def upload_excel():
         sheet = workbook.active
 
         # Extract headers
-        headers = [str(cell.value).strip() if cell.value else f"Column_{i}" for i, cell in enumerate(sheet[1], start=1)]
+        headers = [
+            str(cell.value).strip().lower().replace('.', '_') 
+            if cell.value else f"column_{i}" 
+            for i, cell in enumerate(sheet[1], start=1)
+        ]
+
         
         # Exclude headers that start with "Column"
         headers = [header for header in headers if not header.startswith("Column")]
