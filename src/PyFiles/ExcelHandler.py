@@ -10,7 +10,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from .Db import db
 
-# Initialize the declarative base
 Base = declarative_base()
 upload_blueprint = Blueprint('upload', __name__)
 
@@ -36,8 +35,8 @@ def create_dynamic_model(table_name, headers):
             'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
         }
         for header in headers:
-            # Add columns dynamically based on the header names
-            columns[header] = Column(String(255), nullable=True)
+            if header:  # Ensure header is not empty
+                columns[header] = Column(String(255), nullable=True)
 
         # Create a dynamic model class
         DynamicModel = type(table_name, (db.Model,), columns)
@@ -72,6 +71,7 @@ def upload_excel():
 
         # Extract headers
         headers = [str(cell.value).strip() if cell.value else f"Column_{i}" for i, cell in enumerate(sheet[1], start=1)]
+        
         # Exclude headers that start with "Column"
         headers = [header for header in headers if not header.startswith("Column")]
 
@@ -79,18 +79,22 @@ def upload_excel():
         table_name = 'imported_table'
         DynamicModel = create_dynamic_model(table_name, headers)
 
-        # Connect to the database and create the table
-        # Instead of db.create_all(), use DynamicModel to create the table for this model
-        DynamicModel.__table__.create(bind=db.engine)
-
         # Insert data into the table
         for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
             row_data = {headers[i]: row[i] for i in range(len(headers))}
+            
             # Filter out None or empty values
             row_data = {key: value for key, value in row_data.items() if value is not None and value != ""}
-            instance = DynamicModel(**row_data)
-            db.session.add(instance)
-
+            
+            # Dynamically create an instance and add to session
+            try:
+                instance = DynamicModel(**row_data)
+                db.session.add(instance)
+            except Exception as e:
+                print(f"Error adding row data: {e}")
+                traceback.print_exc()
+        
+        # Commit the session
         db.session.commit()
 
         # Clean up the uploaded file
