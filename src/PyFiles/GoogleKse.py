@@ -80,9 +80,9 @@ def search_emails_and_display():
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             query = """
-             SELECT org_nr, firmanavn
+             SELECT "org.nr", firmanavn
              FROM imported_table
-             WHERE status = 'aktiv selskap' AND e_post_1 IS NULL
+             WHERE status = 'aktiv selskap' AND "e-post 1" IS NULL
             """
             cursor.execute(query)
             rows = cursor.fetchall()
