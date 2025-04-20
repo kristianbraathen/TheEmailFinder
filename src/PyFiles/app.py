@@ -28,7 +28,7 @@ app = Flask(__name__, static_folder='../../dist', static_url_path='/')
 CORS(app, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
 # Retrieve the connection string from the environment variable
-database_url = os.getenv('DATABASE_CONNECTION_STRING', "postgresql://appbruker:SterktPassord123!@theemailfinderserver.postgres.database.azure.com:5432/theemailfinder_database?sslmode=require")
+database_url = os.getenv('DATABASE_CONNECTION_STRING', "postgresql://appbruker:SterktPassord123@theemailfinderserver.postgres.database.azure.com:5432/theemailfinder_database?sslmode=require")
 
 if not database_url:
     raise ValueError("No database URL provided in environment variables.")
