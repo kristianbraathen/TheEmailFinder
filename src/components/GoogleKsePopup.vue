@@ -66,7 +66,7 @@
 
             async fetchCompanies() {
                 try {
-                    const response = await axios.get("http://localhost:8080/GoogleKse/search_emails");
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/search_emails");
                     this.companies = Array.isArray(response.data) ? response.data : [];
                     this.processRunning = true;
 
@@ -78,7 +78,7 @@
             // Select an email and send it to the backend
             async selectEmail(orgNr, email) {
                 try {
-                    const response = await axios.post("http://localhost:8080/GoogleKse/update_email", {
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/update_email", {
                         org_nr: orgNr,
                         email: email,
                     });
@@ -98,7 +98,7 @@
             async startProcess() {
                 if (!this.processRunning) {
                     try {
-                        const response = await axios.post("http://localhost:8080/GoogleKse/start_process");
+                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/start_process");
                         alert(response.data.status);
                         this.processRunning = true;  // Sett prosessen til å være aktiv
                         this.currentSearchQuery = "Prosessen kjører..."; // Eksempel på søkeprogresjon
@@ -115,7 +115,7 @@
             },
             async restartProcess() {
                     try {
-                        const response = await axios.post("http://localhost:8080/GoogleKse/restart_process");
+                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/restart_process");
                         alert(response.data.status);
                         this.processRunning = true;
                         this.currentSearchQuery = "Prosessen er startet på nytt.";
@@ -127,7 +127,7 @@
 
             async stopProcess() {
                 try {
-                    const response = await axios.post("http://localhost:8080/GoogleKse/stop_process");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/stop_process");
                     alert(response.data.status);
                     this.processRunning = false;
                     this.currentSearchQuery = "Prosessen er stoppet."; // Eksempel på søkeprogresjon
