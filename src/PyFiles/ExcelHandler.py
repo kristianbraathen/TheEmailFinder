@@ -21,17 +21,16 @@ def create_dynamic_model(table_name, headers):
     """
     Create a SQLAlchemy model dynamically based on the headers from the Excel file.
     """
-    # Use db's engine to inspect the tables
     engine = db.engine  # Use db from the app context
     metadata = MetaData()
-    metadata.reflect(bind=engine)
+    metadata.bind = engine
+    
+    # Check if the table already exists
     inspector = inspect(engine)
     
-    # Check if the table already exists; do not drop if it already exists.
-    if table_name in inspector.get_table_names():
-        table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
-    else:
-        # Create columns dynamically based on headers
+    # If the table doesn't exist, create it
+    if table_name not in inspector.get_table_names():
+        # Dynamically create columns based on the headers
         columns = {
             '__tablename__': table_name,
             'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
@@ -40,8 +39,17 @@ def create_dynamic_model(table_name, headers):
             # Add columns dynamically based on the header names
             columns[header] = Column(String(255), nullable=True)
 
-        # Create and return a dynamic model class
-        return type(table_name, (db.Model,), columns)
+        # Create a dynamic model class
+        DynamicModel = type(table_name, (db.Model,), columns)
+
+        # Create the table in the database
+        DynamicModel.__table__.create(bind=engine)
+        
+        return DynamicModel
+    else:
+        # If the table exists, just return the model that is mapped to it
+        table = Table(table_name, metadata, autoload_with=engine)
+        return type(table_name, (db.Model,), {'__table__': table})
 
 @upload_blueprint.route('/upload-excel', methods=['POST'])
 def upload_excel():
@@ -72,11 +80,14 @@ def upload_excel():
         DynamicModel = create_dynamic_model(table_name, headers)
 
         # Connect to the database and create the table
-        db.create_all()  # Create the table using db.create_all()
+        # Instead of db.create_all(), use DynamicModel to create the table for this model
+        DynamicModel.__table__.create(bind=db.engine)
 
         # Insert data into the table
         for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
             row_data = {headers[i]: row[i] for i in range(len(headers))}
+            # Filter out None or empty values
+            row_data = {key: value for key, value in row_data.items() if value is not None and value != ""}
             instance = DynamicModel(**row_data)
             db.session.add(instance)
 
