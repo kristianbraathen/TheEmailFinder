@@ -49,7 +49,7 @@ CSE_ID = "879ff228f5bff4ed9"
 
 # Funksjon for å gjøre et søk via Google Custom Search API
 def google_custom_search(query):
-    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=5"
+    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=3"
     response = requests.get(url)
     if response.status_code == 200:
         search_results = response.json()

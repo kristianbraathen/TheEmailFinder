@@ -11,6 +11,7 @@ from .SeleniumScrap import api4_blueprint
 from .ExcelHandler import upload_blueprint
 from .DbToExcel import download_blueprint
 from .GoogleKse import api6_blueprint
+from .SearchResultHandler import email_result_blueprint
 
 # Global UnicodeDecodeError handling
 def handle_unicode_errors(exc_type, exc_value, exc_traceback):
@@ -25,7 +26,7 @@ app = Flask(__name__, static_folder='../../dist', static_url_path='/')
 
 
 # CORS Configuration
-CORS(app, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
+CORS(app, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net","http://localhost:8080"])
 
 # Retrieve the connection string from the environment variable
 database_url = os.getenv('DATABASE_CONNECTION_STRING')
@@ -61,6 +62,7 @@ app.register_blueprint(api4_blueprint, url_prefix="/SeleniumScrap")
 #app.register_blueprint(api5_blueprint, url_prefix="/Kseapi1881")
 app.register_blueprint(upload_blueprint, url_prefix="/ExcelHandler")
 app.register_blueprint(download_blueprint, url_prefix="/DbToExcel")
+app.register_blueprint(email_result_blueprint, url_prefix="/SearchResultHandler")
 
 @app.route("/")
 def home():

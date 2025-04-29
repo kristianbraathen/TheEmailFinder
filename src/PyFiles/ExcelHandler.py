@@ -1,4 +1,4 @@
-import time
+﻿import time
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import os
@@ -9,6 +9,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from .Db import db
+import re
+
 
 Base = declarative_base()
 upload_blueprint = Blueprint('upload', __name__)
@@ -20,35 +22,38 @@ def create_dynamic_model(table_name, headers):
     """
     Create a SQLAlchemy model dynamically based on the headers from the Excel file.
     """
+
+    # Use db's engine to inspect the tables
     engine = db.engine  # Use db from the app context
     metadata = MetaData()
-    metadata.bind = engine
-    
-    # Check if the table already exists
+    metadata.reflect(bind=engine)
     inspector = inspect(engine)
-    
-    # If the table doesn't exist, create it
-    if table_name not in inspector.get_table_names():
-        # Dynamically create columns based on the headers
+
+    # Sanitize headers to be valid Python identifiers
+    sanitized_headers = [re.sub(r'\W|^(?=\d)', '_', header) for header in headers]
+
+    # Check if the table already exists; do not drop if it already exists.
+    if table_name in inspector.get_table_names():
+        # Reflect the existing table
+        table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
+        # Create a dynamic model class based on the existing table
+        DynamicModel = type(table_name, (Base,), {'__table__': table})
+    else:
+        # Create columns dynamically based on headers
         columns = {
             '__tablename__': table_name,
             'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
         }
-        for header in headers:
-            if header:  # Ensure header is not empty
-                columns[header] = Column(String(255), nullable=True)
 
-        # Create a dynamic model class
-        DynamicModel = type(table_name, (db.Model,), columns)
+        for header, sanitized_header in zip(headers, sanitized_headers):
+            # Add columns dynamically based on the sanitized header names
+            columns[sanitized_header] = Column(String(255), nullable=True)
 
-        # Create the table in the database
-        DynamicModel.__table__.create(bind=engine)
-        
-        return DynamicModel
-    else:
-        # If the table exists, just return the model that is mapped to it
-        table = Table(table_name, metadata, autoload_with=engine)
-        return type(table_name, (db.Model,), {'__table__': table})
+        # Create and return a dynamic model class
+        DynamicModel = type(table_name, (Base,), columns)
+    
+    return DynamicModel
+
 
 @upload_blueprint.route('/upload-excel', methods=['POST'])
 def upload_excel():
@@ -70,36 +75,38 @@ def upload_excel():
         sheet = workbook.active
 
         # Extract headers
-        headers = [
-            str(cell.value).strip().lower().replace('.', '_') 
-            if cell.value else f"column_{i}" 
-            for i, cell in enumerate(sheet[1], start=1)
-        ]
-
+        headers = [str(cell.value).strip() if cell.value else f"Column_{i}" for i, cell in enumerate(sheet[1], start=1)]
+        print(f"Original Headers: {headers}")  # Debugging: Print original headers
         
         # Exclude headers that start with "Column"
         headers = [header for header in headers if not header.startswith("Column")]
+        print(f"Filtered Headers: {headers}")  # Debugging: Print filtered headers
+
+        # Sanitize headers to be valid Python identifiers
+        sanitized_headers = [re.sub(r'\W|^(?=\d)', '_', header) for header in headers]
+        print(f"Sanitized Headers: {sanitized_headers}")  # Debugging: Print sanitized headers
 
         # Create a dynamic model
         table_name = 'imported_table'
-        DynamicModel = create_dynamic_model(table_name, headers)
+        DynamicModel = create_dynamic_model(table_name, sanitized_headers)
+        DynamicModel.metadata.create_all(db.engine)  # ✅ Ensure table is created
+
+        # Connect to the database and create the table
+        # Explicitly create the table
+        Base.metadata.create_all(db.engine)  # ✅ This ensures the table is created
 
         # Insert data into the table
         for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
-            row_data = {headers[i]: row[i] for i in range(len(headers))}
-            
-            # Filter out None or empty values
-            row_data = {key: value for key, value in row_data.items() if value is not None and value != ""}
-            
-            # Dynamically create an instance and add to session
-            try:
-                instance = DynamicModel(**row_data)
-                db.session.add(instance)
-            except Exception as e:
-                print(f"Error adding row data: {e}")
-                traceback.print_exc()
-        
-        # Commit the session
+            row_data = {}
+            for i in range(len(sanitized_headers)):
+                value = row[i]
+                if isinstance(value, float) and value.is_integer():
+                    value = int(value)
+                row_data[sanitized_headers[i]] = value
+            print(f"Row Data: {row_data}")  # Debugging: Print row data
+            instance = DynamicModel(**row_data)
+            db.session.add(instance)
+
         db.session.commit()
 
         # Clean up the uploaded file

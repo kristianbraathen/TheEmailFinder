@@ -43,6 +43,9 @@ def export_to_excel():
             df.to_excel(writer, index=False, sheet_name="Data")
         output.seek(0)
 
+        cursor.execute("DROP TABLE IF EXISTS imported_table") # Slett alle rader fra tabellen
+        conn.commit()  # Bekreft endringene i databasen
+
         return send_file(
             output,
             as_attachment=True,

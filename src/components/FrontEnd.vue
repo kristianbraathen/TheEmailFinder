@@ -3,10 +3,19 @@
         <h1>Oppdater e-post for organisasjoner</h1>
 
         <!-- Knapp for å starte oppdatering -->
-        <button @click="processAndCleanOrganizations">Start oppdatering fra Brønnøysund</button>
+        <button @click="processAndCleanOrganizations" :disabled="isUpdating">
+            {{ isUpdating ? 'Laster...' : 'Start oppdatering fra Brønnøysund' }}
+            <span v-if="isUpdating" class="spinner"></span>
+        </button>
+
         <button @click="openPopup3">Google Search</button>
         <button @click="openPopup1">Facebook Scrap</button>
         <button @click="openPopup2">1881 Scrap</button>
+        <button @click="fetchSearchResults().then(openPopup4)"
+                :disabled="!searchResults || searchResults.length === 0"
+                :class="{'enabled-button': searchResults && searchResults.length > 0, 'disabled-button': !searchResults || searchResults.length === 0}">
+            Vis resultater
+        </button>
 
         <GoogleKsePopup :isVisible="showPopup3"
                         :companies="companies"
@@ -19,11 +28,17 @@
         <Kse1881PopUP :isVisible="showPopup2"
                       :companies="companies"
                       @close="closePopup2" />
+        <!-- SearchResultPopup popup -->
+        <SearchResultsPopup :results="searchResults"
+                            :visible="showPopup4"
+                            @close="closePopup4"
+                            @updateResults="removeResult" />
         <!-- Manuelt søk -->
         <div>
             <input v-model="search_by_company_name" placeholder="Søk etter bedrifter" />
             <button @click="manualSearch">Søk</button>
         </div>
+
 
         <!-- Resultatvisning -->
         <div v-if="processingData">
@@ -55,6 +70,7 @@
     import Kse1881PopUP from "./Kse1881PopUP.vue";  // Importere Kse1881PopUP-komponenten
     import ExcelOut from "./ExcelOut.vue";  // Importere ExcelOut-komponenten
     import GoogleKsePopup from "./GoogleKsePopup.vue";
+    import SearchResultPopup from "./SearchResultPopup.vue";
 
     export default {
         data() {
@@ -66,7 +82,9 @@
                 showPopup1: false,
                 showPopup2: false,// Tilstand for å vise popup
                 showPopup3: false,
+                showPopup4: false,
                 companies: [], // Selskapsdata for popup
+                status: "", // Statusmelding
             };
         },
         components: {
@@ -74,7 +92,9 @@
             KSEPopUP,
             Kse1881PopUP,
             ExcelOut,
-            GoogleKsePopup
+            GoogleKsePopup,
+            SearchResultPopup
+
         },
         methods: {
             async processAndCleanOrganizations() {
@@ -117,6 +137,21 @@
                     this.searchResults = null;
                 }
             },
+            async fetchSearchResults() {
+                 try {
+                     // Fetch results from the backend
+                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+         
+                     // Update searchResults with the fetched data
+                     this.searchResults = Array.isArray(response.data) ? response.data : [];
+                 } catch (error) {
+                     console.error("Error fetching search results:", error);
+                     this.searchResults = []; // Set to an empty array on error
+                 }
+            },
+            removeResult(orgNr) {
+                this.searchResults = this.searchResults.filter(r => r.org_nr !== orgNr);
+            },
             openPopup1() {
                 this.showPopup1 = true;
             },
@@ -135,10 +170,34 @@
             closePopup3() {
                 this.showPopup3 = false;
             },
+            openPopup4() {
+                this.showPopup4 = true;
+            },
+            closePopup4() {
+                this.showPopup4 = false;
+            },
         },
     };
 </script>
 <style scoped>
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+        margin-left: 10px;
+        vertical-align: middle;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
     /* Generell styling */
     body {
         font-family: Arial, sans-serif;
@@ -217,6 +276,26 @@
             background-color: #333; /* Gråaktig for deaktivert */
             color: #777; /* Dempet tekstfarge */
             cursor: not-allowed;
+        }
+
+    .enabled-button {
+        background-color: #2c2c2c; /* Dark background for enabled */
+        color: #e0e0e0; /* Light text */
+        border: 1px solid #444; /* Dark border */
+        cursor: pointer;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+        .enabled-button:hover {
+            background-color: #444; /* Lighter gray on hover */
+            color: #ffffff; /* Whiter text on hover */
+        }
+
+        .disabled-button {
+            background-color: #333; /* Gray background for disabled */
+            color: #777; /* Muted text color */
+            border: 1px solid #444; /* Dark border */
+            cursor: not-allowed; /* Show not-allowed cursor */
         }
 
     /* Statusvisning */

@@ -147,6 +147,11 @@
     }
 
     .popup-content {
+        position: fixed; /* Make the popup fixed on the screen */
+        top: 50%; /* Center vertically */
+        left: 50%; /* Center horizontally */
+        transform: translate(-50%, -50%); /* Adjust for the popup's own dimensions */
+        z-index: 1000; /* Ensure it appears above other elements */
         font-family: Arial, sans-serif;
         background-color: #121212; /* Mørk bakgrunn */
         color: #e0e0e0; /* Lys tekst for kontrast */
@@ -158,6 +163,7 @@
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+
 
     .emailresults {
         font-family: Arial, sans-serif;

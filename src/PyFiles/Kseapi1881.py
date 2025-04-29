@@ -55,6 +55,7 @@ chrome_options.add_argument("--remote-debugging-port=0")
 chrome_options.add_argument("--log-level=3")  
 chrome_options.add_argument("--disable-default-apps")  
 chrome_options.add_argument("--disable-session-crashed-bubble")  
+chrome_options.add_argument("--disable-dev-shm-usage")
 
 # Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
@@ -65,7 +66,7 @@ def create_driver():
 
 # Funksjon for å gjøre et søk via Google Custom Search API
 def google_custom_search(query):
-    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no"
+    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=3"
     response = requests.get(url)
     if response.status_code == 200:
         search_results = response.json()

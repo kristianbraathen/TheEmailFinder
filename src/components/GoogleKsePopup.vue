@@ -20,6 +20,7 @@
 
                     <!-- Navigation -->
                     <button @click="nextCompany">Neste Bedrift</button>
+                    <button @click="discardCompany(companies[currentCompanyIndex].org_nr)">Forkast</button>
                 </div>
                 <p v-else>Alle selskaper er behandlet.</p>
             </div>
@@ -63,9 +64,11 @@
                     console.error("Feil under knappetrykk:", error);
                 }
             },
-
             async fetchCompanies() {
                 try {
+
+                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
+
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/search_emails");
                     this.companies = Array.isArray(response.data) ? response.data : [];
                     this.processRunning = true;
@@ -74,7 +77,15 @@
                     console.error("Feil under henting av selskaper:", error);
                 }
             },
-
+            async fetchStoredCompanies() {
+                try {
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+                    this.companies = Array.isArray(response.data) ? response.data : [];
+                    this.processRunning = true;
+                } catch (error) {
+                    console.error("Feil under henting av lagrede selskaper:", error);
+                }
+            },
             // Select an email and send it to the backend
             async selectEmail(orgNr, email) {
                 try {
@@ -87,14 +98,23 @@
                     console.error("Feil under oppdatering:", error);
                 }
             },
-
+            async discardCompany(orgNr) {
+                try {
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/delete_stored_result", {
+                        org_nr: orgNr
+                    });
+                    alert(response.data.status);
+                    this.nextCompany();
+                } catch (error) {
+                    console.error("Feil ved forkasting:", error);
+                }
+            },
             // Move to the next company
             nextCompany() {
                 if (this.currentCompanyIndex < this.companies.length - 1) {
                     this.currentCompanyIndex++;
                 }
             },
-
             async startProcess() {
                 if (!this.processRunning) {
                     try {
@@ -158,8 +178,12 @@
         align-items: center;
         z-index: 1000;
     }
-
     .popup-content {
+        position: fixed; /* Make the popup fixed on the screen */
+        top: 50%; /* Center vertically */
+        left: 50%; /* Center horizontally */
+        transform: translate(-50%, -50%); /* Adjust for the popup's own dimensions */
+        z-index: 1000; /* Ensure it appears above other elements */
         font-family: Arial, sans-serif;
         background-color: #121212; /* Mørk bakgrunn */
         color: #e0e0e0; /* Lys tekst for kontrast */

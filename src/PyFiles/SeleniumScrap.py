@@ -15,23 +15,12 @@ import os
 api4_blueprint = Blueprint('api4', __name__)
 
 # Configure ChromeDriver using chromedriver-autoinstaller
-chromedriver_autoinstaller.install()  
+#chromedriver_autoinstaller.install()  
 
-@api4_blueprint.route('/search_by_company_name', methods=['GET'])
-def search_emails():
-    company_name = request.args.get('company_name')
-    
-    if not company_name:
-        return jsonify({"error": "Company name is required."}), 400
-    
-    # Call the scraping function
-    emails = find_emails_on_facebook(company_name)
-    
-    return jsonify({"emails": emails})
 
 def find_emails_on_facebook(company_name):
+    driver = None  # Legg til dette helt øverst
     try:
-        # Install and set up ChromeDriver every time the function is called
         chromedriver_autoinstaller.install()
 
         options = Options()
@@ -40,21 +29,20 @@ def find_emails_on_facebook(company_name):
             chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
 
         options.binary_location = chrome_path
+        options.add_argument("--headless=new")  # OBS: Bruk 'new' for moderne headless-mode
         options.add_argument("--no-sandbox")
-        options.add_argument("--disable-webusb")
+        options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-extensions")
-        options.add_argument("--enable-unsafe-swiftshader")
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--use-gl=swiftshader")
-        options.add_argument("--disable-webgl")
-        options.add_argument("--disable-webgpu")
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_argument('--headless')  # Use headless for production
+        options.add_argument("--disable-webgl")
+        options.add_argument("--disable-webusb")
+        options.add_argument("--disable-webgpu")
+        options.add_argument("--use-gl=swiftshader")
+        options.add_argument("--remote-debugging-port=9222")
 
-        driver_path = os.getenv('CHROMEDRIVER_PATH')
-        service = Service(driver_path) if driver_path else Service()
+        service = Service()
         driver = webdriver.Chrome(service=service, options=options)
 
         # --- Scraping Logic ---
@@ -88,13 +76,25 @@ def find_emails_on_facebook(company_name):
             emails.update(found_emails)
 
         return "\n".join(emails) if emails else "Ingen e-poster funnet."
-    
+
     except Exception as e:
-        driver.save_screenshot("debug_screenshot.png")
-        return f"Feil: {e}"
+        if driver:
+            driver.save_screenshot("debug_screenshot.png")
+        return f"Feil under scraping: {repr(e)}"
     
     finally:
-        try:
+        if driver:
             driver.quit()
-        except:
-            pass
+
+
+@api4_blueprint.route('/search_by_company_name', methods=['GET'])
+def search_emails():
+    company_name = request.args.get('company_name')
+    
+    if not company_name:
+        return jsonify({"error": "Company name is required."}), 400
+    
+    # Call the scraping function
+    emails = find_emails_on_facebook(company_name)
+    
+    return jsonify({"emails": emails})
