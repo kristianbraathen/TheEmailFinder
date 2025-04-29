@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from Db import db
+from .Db import db
 
 # Initialize the declarative base
 Base = declarative_base()
