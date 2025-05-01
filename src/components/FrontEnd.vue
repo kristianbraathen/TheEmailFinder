@@ -16,7 +16,6 @@
                 :class="{'enabled-button': searchResults && searchResults.length > 0, 'disabled-button': !searchResults || searchResults.length === 0}">
             Vis resultater
         </button>
-
         <GoogleKsePopup :isVisible="showPopup3"
                         :companies="companies"
                         @close="closePopup3" />
@@ -38,24 +37,19 @@
             <input v-model="search_by_company_name" placeholder="Søk etter bedrifter" />
             <button @click="manualSearch">Søk</button>
         </div>
-
-
         <!-- Resultatvisning -->
         <div v-if="processingData">
             <h2>Status</h2>
             <p>{{ processingData.status }}</p>
-            <p>Updated: {{ processingData.details.updated_count }}</p>
-            <p>No email: {{ processingData.details.no_email_count }}</p>
-            <p>Errors: {{ processingData.details.error_count }}</p>
-
+            <p>Updated: {{ processingData.updated_count }}</p>
+            <p>No email: {{ processingData.no_email_count }}</p>
+            <p>Errors: {{ processingData.error_count }}</p>
         </div>
-
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
             <h2>Søkeresultater</h2>
             <pre>{{ searchResults }}</pre>
         </div>
-
         <!-- Drag-and-drop komponent -->
         <DragnDropComponent></DragnDropComponent>
         <ExcelOut></ExcelOut>

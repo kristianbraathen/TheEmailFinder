@@ -162,6 +162,28 @@ def update_email():
         db.session.rollback()
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
 
+@api6_blueprint.route('/delete_stored_result', methods=['POST'])
+def delete_stored_result():
+    data = request.get_json()
+    org_nr = data.get("org_nr")
+
+    if not org_nr:
+        return jsonify({"status": "Organisasjonsnummer mangler"}), 400
+
+    try:
+        with psycopg2.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM email_results WHERE "org_nr" = %s
+            """, (org_nr,))
+            conn.commit()
+
+        return jsonify({"status": f"Slettet org.nr {org_nr}"}), 200
+
+    except Exception as e:
+        print(f"Feil ved sletting av org.nr {org_nr}: {e}")
+        return jsonify({"status": "Feil ved sletting"}), 500
+
 @api6_blueprint.route('/start_process', methods=['POST'])
 def start_process():
     global process_running

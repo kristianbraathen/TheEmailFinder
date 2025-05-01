@@ -19,7 +19,7 @@
                     </ul>
 
                     <!-- Navigation -->
-                    <button @click="nextCompany">Neste Bedrift</button>
+                    <button @click="discardAndNextCompany">Forkast og gå til Neste Bedrift</button>
                 </div>
                 <p v-else>Alle selskaper er behandlet.</p>
             </div>
@@ -65,12 +65,58 @@
 
             async fetchCompanies() {
                 try {
+                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
+
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/search_emails");
                     this.companies = Array.isArray(response.data) ? response.data : [];
                     this.processRunning = true;
                     
                 } catch (error) {
                     console.error("Feil under henting av selskaper:", error);
+                }
+            },
+            async fetchStoredCompanies() {
+                try {
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+                    this.companies = Array.isArray(response.data) ? response.data : [];
+                    this.processRunning = true;
+                } catch (error) {
+                    console.error("Feil under henting av lagrede selskaper:", error);
+                }
+            },
+            // Select an email and send it to the backend
+            async selectEmail(orgNr, email) {
+                try {
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/update_email", {
+                        org_nr: orgNr,
+                        email: email,
+                    });
+                    alert(response.data.status || "E-post oppdatert!");
+                } catch (error) {
+                    console.error("Feil under oppdatering:", error);
+                }
+            },
+            async discardCompany(orgNr) {
+                try {
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1818/delete_stored_result", {
+                        org_nr: orgNr
+                    });
+                    alert(response.data.status);
+                    this.nextCompany();
+                } catch (error) {
+                    console.error("Feil ved forkasting:", error);
+                }
+            },
+            // Move to the next company
+            async discardAndNextCompany() {
+                const orgNr = this.companies[this.currentCompanyIndex]?.org_nr;
+                if (!orgNr) return;
+
+                try {
+                    await this.discardCompany(orgNr); // Forkast i backend
+                    this.nextCompany();               // Gå videre i listen
+                } catch (error) {
+                    console.error("Feil under forkasting og henting av neste:", error);
                 }
             },
 

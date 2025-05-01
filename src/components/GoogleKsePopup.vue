@@ -19,7 +19,7 @@
                     </ul>
 
                     <!-- Navigation -->
-                    <button @click="nextCompany">Neste Bedrift</button>
+                    <button @click="discardAndNextCompany">Forkast og gå til Neste Bedrift</button>
                     <button @click="discardCompany(companies[currentCompanyIndex].org_nr)">Forkast</button>
                 </div>
                 <p v-else>Alle selskaper er behandlet.</p>
@@ -110,9 +110,15 @@
                 }
             },
             // Move to the next company
-            nextCompany() {
-                if (this.currentCompanyIndex < this.companies.length - 1) {
-                    this.currentCompanyIndex++;
+            async discardAndNextCompany() {
+                const orgNr = this.companies[this.currentCompanyIndex]?.org_nr;
+                if (!orgNr) return;
+
+                try {
+                    await this.discardCompany(orgNr); // Forkast i backend
+                    this.nextCompany();               // Gå videre i listen
+                } catch (error) {
+                    console.error("Feil under forkasting og henting av neste:", error);
                 }
             },
             async startProcess() {
