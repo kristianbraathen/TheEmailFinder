@@ -85,7 +85,7 @@ def update_email():
 
         # Perform the update in the database
         query = text(
-            'UPDATE imported_table SET "e_post_1" = :email WHERE "org_nr" = :org_nr'
+            'UPDATE imported_table SET "E_post_1" = :email WHERE "Org_nr" = :org_nr'
         )
         db.session.execute(query, {"email": email, "org_nr": org_nr})
         db.session.commit()
