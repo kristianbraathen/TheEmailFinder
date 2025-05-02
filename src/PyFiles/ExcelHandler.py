@@ -102,7 +102,7 @@ def upload_excel():
                 value = row[i]
                 # Konverter tom tekst eller tom celle til None
                 if value in ("", None):
-                value = None
+                    value = None
 
                 if isinstance(value, float) and value.is_integer():
                     value = int(value)
