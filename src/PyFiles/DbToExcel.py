@@ -54,7 +54,7 @@ def export_to_excel():
         return send_file(
             output,
             as_attachment=True,
-            download_name="exported_data.xlsx",
+            download_name=filename,
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 

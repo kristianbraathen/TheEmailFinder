@@ -100,6 +100,10 @@ def upload_excel():
             row_data = {}
             for i in range(len(sanitized_headers)):
                 value = row[i]
+                # Konverter tom tekst eller tom celle til None
+                if value in ("", None):
+                value = None
+
                 if isinstance(value, float) and value.is_integer():
                     value = int(value)
                 row_data[sanitized_headers[i]] = value

@@ -32,17 +32,17 @@ def process_organization_with_single_call(org_nr):
         is_konkurs, under_avvikling, slettedato, oppstartsdato = extract_company_status(data)
 
         # Bestem status
-        status = ""
+        Status = ""
         if is_konkurs:
-            status = "konkurs"
+            Status = "konkurs"
         elif under_avvikling:
-            status = "under avvikling"
+            Status = "under avvikling"
         elif slettedato:
-            status = "slettet"
+            Status = "slettet"
         elif oppstartsdato and (datetime.now() - oppstartsdato).days < 3 * 365:
-            status = "oppstart mindre enn 3 år"
+            Status = "oppstart mindre enn 3 år"
         else:
-            status = "aktiv selskap"
+            Status = "aktiv selskap"
 
         # Oppdater statusfeltet i databasen
         with psycopg2.connect(connection_string) as conn:
