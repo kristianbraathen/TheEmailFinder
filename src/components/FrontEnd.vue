@@ -41,10 +41,14 @@
         <div v-if="processingData">
             <h2>Status</h2>
             <p>{{ processingData.status }}</p>
-            <p>Updated: {{ processingData.details.updated_count }}</p>
-            <p>No email: {{ processingData.details.no_email_count }}</p>
-            <p>Errors: {{ processingData.details.error_count }}</p>
+
+            <div v-if="processingData.details">
+                <p>Updated: {{ processingData.details.updated_count }}</p>
+                <p>No email: {{ processingData.details.no_email_count }}</p>
+                <p>Errors: {{ processingData.details.error_count }}</p>
+            </div>
         </div>
+
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
             <h2>Søkeresultater</h2>
@@ -99,21 +103,15 @@
                     const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
 
                     // Sett all data som ett objekt
-                    // Sett all data som ett objekt
                     this.processingData = {
                         status: response.data.status,
-                        updatedCount: response.data.updated_count,
-                        noEmailCount: response.data.no_email_count,
-                        errorCount: response.data.error_count
+                        details: response.data.details
                     };
-
                 } catch (error) {
                     console.error("Feil under prosessering:", error);
                     this.processingData = {
                         status: "En feil oppsto under prosesseringen.",
-                        updatedCount: 0,
-                        noEmailCount: 0,
-                        errorCount: 0
+                        details: null
                     };
                 } finally {
                     this.isUpdating = false; // Aktiver knappen igjen
