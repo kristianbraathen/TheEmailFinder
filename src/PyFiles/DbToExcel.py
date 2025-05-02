@@ -4,6 +4,7 @@ import io
 import psycopg2
 import openpyxl
 import os
+from datetime import datetime
 
 download_blueprint = Blueprint('download', __name__)
 
@@ -42,6 +43,10 @@ def export_to_excel():
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name="Data")
         output.seek(0)
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"Behandlet Liste_{timestamp}.xlsx"
 
         cursor.execute("DROP TABLE IF EXISTS imported_table") # Slett alle rader fra tabellen
         conn.commit()  # Bekreft endringene i databasen

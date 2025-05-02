@@ -49,8 +49,8 @@ def process_organization_with_single_call(org_nr):
             cursor = conn.cursor()
             cursor.execute("""
                  UPDATE imported_table
-                 SET status = %s
-                 WHERE "org_nr" = %s
+                 SET Status = %s
+                 WHERE "Org_nr" = %s
             """, (status, org_nr))
             conn.commit()
             print(f"Status oppdatert til '{status}' for orgNr {org_nr}.")
@@ -64,8 +64,8 @@ def process_organization_with_single_call(org_nr):
                     cursor = conn.cursor()
                     cursor.execute("""
                         UPDATE imported_table
-                        SET "e_post_1" = %s
-                        WHERE "org_nr" = %s
+                        SET "E_post_1" = %s
+                        WHERE "Org_nr" = %s
                     """, (epost, org_nr))
                     conn.commit()
                     print(f"Oppdatert e-post for orgNr {org_nr}.")
@@ -113,7 +113,7 @@ def process_and_clean_organizations():
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT "org_nr" FROM imported_table
+                SELECT "Org_nr" FROM imported_table
             """)
             # Hent resultatene fra andre kolonne
             org_nrs = {row[0].strip() for row in cursor.fetchall()}

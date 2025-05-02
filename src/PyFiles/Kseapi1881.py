@@ -96,9 +96,9 @@ def search_emails_and_display():
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             query = """
-            SELECT "org_nr", firmanavn
+            SELECT "Org_nr", Firmanavn
             FROM imported_table
-            WHERE status = 'aktiv selskap' AND "e_post_1" IS NULL
+            WHERE Status = 'aktiv selskap' AND "E_post_1" IS NULL
             """
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -161,7 +161,7 @@ def update_email():
 
     try:
         query = text(
-            'UPDATE imported_table SET "e_post_1" = :email WHERE "org_nr" = :org_nr'
+            'UPDATE imported_table SET "E_post_1" = :email WHERE "Org_nr" = :org_nr'
         )
         db.session.execute(query, {"email": email, "org_nr": org_nr})
         db.session.commit()
@@ -183,7 +183,7 @@ def delete_stored_result():
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                DELETE FROM email_results WHERE "org_nr" = %s
+                DELETE FROM email_results WHERE "Org_nr" = %s
             """, (org_nr,))
             conn.commit()
 

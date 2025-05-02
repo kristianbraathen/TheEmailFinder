@@ -41,9 +41,9 @@
         <div v-if="processingData">
             <h2>Status</h2>
             <p>{{ processingData.status }}</p>
-            <p>Updated: {{ processingData.updated_count }}</p>
-            <p>No email: {{ processingData.no_email_count }}</p>
-            <p>Errors: {{ processingData.error_count }}</p>
+            <p>Updated: {{ processingData.details.updated_count }}</p>
+            <p>No email: {{ processingData.details.no_email_count }}</p>
+            <p>Errors: {{ processingData.details.error_count }}</p>
         </div>
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
