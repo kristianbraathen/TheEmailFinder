@@ -32,7 +32,7 @@ def process_organization_with_single_call(org_nr):
         is_konkurs, under_avvikling, slettedato, oppstartsdato = extract_company_status(data)
 
         # Bestem status
-        Status = ""
+        Status = ""  # Python-variabelen med stor S for å matche kolonnen i databasen
         if is_konkurs:
             Status = "konkurs"
         elif under_avvikling:
@@ -45,37 +45,41 @@ def process_organization_with_single_call(org_nr):
             Status = "aktiv selskap"
 
         # Oppdater statusfeltet i databasen
-        with psycopg2.connect(connection_string) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                 UPDATE imported_table
-                 SET Status = %s
-                 WHERE "Org_nr" = %s
-            """, (status, org_nr))
-            conn.commit()
-            print(f"Status oppdatert til '{status}' for orgNr {org_nr}.")
+        try:
+            with psycopg2.connect(connection_string) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                     UPDATE imported_table
+                     SET "Status" = %s
+                     WHERE "Org_nr" = %s
+                """, (Status, org_nr))
+                conn.commit()
+                print(f"Status oppdatert til '{Status}' for orgNr {org_nr}.")
 
-        # Hent e-post hvis ingen kritisk status er funnet
-        if not is_konkurs and not under_avvikling and not slettedato:
-            epost = data.get("epostadresse")
+            # Hent e-post hvis ingen kritisk status er funnet
+            if not is_konkurs and not under_avvikling and not slettedato:
+                epost = data.get("epostadresse")
 
-            if epost:
-                with psycopg2.connect(connection_string) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        UPDATE imported_table
-                        SET "E_post_1" = %s
-                        WHERE "Org_nr" = %s
-                    """, (epost, org_nr))
-                    conn.commit()
-                    print(f"Oppdatert e-post for orgNr {org_nr}.")
-                return "updated"
+                if epost:
+                    with psycopg2.connect(connection_string) as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            UPDATE imported_table
+                            SET "E_post_1" = %s
+                            WHERE "Org_nr" = %s
+                        """, (epost, org_nr))
+                        conn.commit()
+                        print(f"Oppdatert e-post for orgNr {org_nr}.")
+                    return "updated"
 
-        print(f"Ingen e-post funnet for orgNr {org_nr}.")
-        return "no_email"
+            print(f"Ingen e-post funnet for orgNr {org_nr}.")
+            return "no_email"
 
-    except requests.RequestException as e:
-        print(f"Feil ved API-forespørsel for orgNr {org_nr}: {e}")
+        except requests.RequestException as e:
+            print(f"Feil ved API-forespørsel for orgNr {org_nr}: {e}")
+            return "error"
+    except Exception as e:
+        print(f"Feil under prosessering: {e}")
         return "error"
 
 

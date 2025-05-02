@@ -21,7 +21,7 @@ export default {
         // Lag en midlertidig nedlastingslenke
         const a = document.createElement("a");
         a.href = url;
-        a.download = "exported_data.xlsx";
+        a.setAttribute("download", "");  // lar nettleseren bruke filnavnet fra serveren
         document.body.appendChild(a);
         a.click();
         a.remove();
