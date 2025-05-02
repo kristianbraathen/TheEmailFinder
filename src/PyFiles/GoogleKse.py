@@ -129,7 +129,7 @@ def search_emails_and_display():
 @api6_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():
     global process_running
-    if not process_running:  # Kontroller før du setter prosessen som kjørende
+    if process_running:  # Hvis prosessen allerede kjører, returner feil
         return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
 
     process_running = True  # Sett prosessen som kjørende
@@ -138,6 +138,8 @@ def search_emails_endpoint():
         return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
+    finally:
+        process_running = False  # Tilbakestill flagget for å tillate nye søk
 
 @api6_blueprint.route("/update_email", methods=["POST"])
 def update_email():

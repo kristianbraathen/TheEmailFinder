@@ -18,39 +18,41 @@ upload_blueprint = Blueprint('upload', __name__)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
 
+def drop_table_if_exists(table_name):
+    """
+    Slett tabellen hvis den allerede finnes.
+    """
+    engine = db.engine
+    inspector = inspect(engine)
+    
+    if table_name in inspector.get_table_names():
+        # Hvis tabellen finnes, slett den
+        metadata = MetaData()
+        table = Table(table_name, metadata, autoload_with=engine)
+        table.drop(engine)
+        print(f"Tabellen {table_name} ble slettet.")
+    else:
+        print(f"Tabellen {table_name} finnes ikke.")
+
 def create_dynamic_model(table_name, headers):
     """
     Create a SQLAlchemy model dynamically based on the headers from the Excel file.
     """
-
-    # Use db's engine to inspect the tables
-    engine = db.engine  # Use db from the app context
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
-    inspector = inspect(engine)
-
     # Sanitize headers to be valid Python identifiers
     sanitized_headers = [re.sub(r'\W|^(?=\d)', '_', header) for header in headers]
 
-    # Check if the table already exists; do not drop if it already exists.
-    if table_name in inspector.get_table_names():
-        # Reflect the existing table
-        table = Table(table_name, metadata, autoload_with=engine, extend_existing=True)
-        # Create a dynamic model class based on the existing table
-        DynamicModel = type(table_name, (Base,), {'__table__': table})
-    else:
-        # Create columns dynamically based on headers
-        columns = {
-            '__tablename__': table_name,
-            'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
-        }
+    # Create columns dynamically based on headers
+    columns = {
+        '__tablename__': table_name,
+        'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
+    }
 
-        for header, sanitized_header in zip(headers, sanitized_headers):
-            # Add columns dynamically based on the sanitized header names
-            columns[sanitized_header] = Column(String(255), nullable=True)
+    for header, sanitized_header in zip(headers, sanitized_headers):
+        # Add columns dynamically based on the sanitized header names
+        columns[sanitized_header] = Column(String(255), nullable=True)
 
-        # Create and return a dynamic model class
-        DynamicModel = type(table_name, (Base,), columns)
+    # Create and return a dynamic model class
+    DynamicModel = type(table_name, (Base,), columns)
     
     return DynamicModel
 
@@ -86,11 +88,14 @@ def upload_excel():
         sanitized_headers = [re.sub(r'\W|^(?=\d)', '_', header) for header in headers]
         print(f"Sanitized Headers: {sanitized_headers}")  # Debugging: Print sanitized headers
 
-        # Create a dynamic model
+        # Slett tabellen hvis den allerede finnes
         table_name = 'imported_table'
+        drop_table_if_exists(table_name)
+        
+        # Create a dynamic model
         DynamicModel = create_dynamic_model(table_name, sanitized_headers)
-        DynamicModel.metadata.create_all(db.engine)  # ✅ Ensure table is created
-
+        DynamicModel.metadata.create_all(db.engine)  # Opprett tabellen
+        
         # Connect to the database and create the table
         # Explicitly create the table
         Base.metadata.create_all(db.engine)  # ✅ This ensures the table is created
