@@ -103,10 +103,9 @@ def extract_company_status(data):
     is_konkurs = konkurs or under_avvikling or slettedato is not None
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
-def process_and_clean_organizations():
+def process_all_in_batches(batch_size=100):
     """
-    Behandler alle organisasjoner i databasen:
-    - Oppdaterer statusfeltet for hver organisasjon.
+    Behandler organisasjonene i batcher for å unngå timeout.
     """
     updated_count = 0
     no_email_count = 0
@@ -122,15 +121,21 @@ def process_and_clean_organizations():
             # Hent resultatene fra andre kolonne
             org_nrs = {row[0].strip() for row in cursor.fetchall()}
 
-        # Behandle hver organisasjon
-        for org_nr in org_nrs:
-            result = process_organization_with_single_call(org_nr)
-            if result == "updated":
-                updated_count += 1
-            elif result == "no_email":
-                no_email_count += 1
-            else:
-                error_count += 1
+        # Del opp listen i batcher
+        batches = [list(org_nrs)[i:i + batch_size] for i in range(0, len(org_nrs), batch_size)]
+
+        # Behandle hver batch
+        for batch in batches:
+            for org_nr in batch:
+                result = process_organization_with_single_call(org_nr)
+                if result == "updated":
+                    updated_count += 1
+                elif result == "no_email":
+                    no_email_count += 1
+                else:
+                    error_count += 1
+
+        return updated_count, no_email_count, error_count
 
     except Exception as e:
         print(f"Feil oppstod under prosessering: {e}")
@@ -144,7 +149,7 @@ def process_and_clean_organizations():
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
 def process_and_clean_endpoint():
     try:
-        updated, no_email, errors = process_and_clean_organizations()
+        updated, no_email, errors = process_all_in_batches()
         return jsonify({
             "status": "Behandling fullført.",
             "updated_count": updated,

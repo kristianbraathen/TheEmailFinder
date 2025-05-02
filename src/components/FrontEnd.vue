@@ -102,16 +102,15 @@
                 try {
                     const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
 
-                    // Sett all data som ett objekt
-                    this.processingData = {
-                        status: response.data.status,
-                        details: response.data.details
-                    };
+                    // Sett hele responsen som processingData
+                    this.processingData = response.data;
                 } catch (error) {
                     console.error("Feil under prosessering:", error);
+
+                    // Hvis det oppstår en feil under API-kallet, vis en feilstatus
                     this.processingData = {
                         status: "En feil oppsto under prosesseringen.",
-                        details: null
+                        error: error.message,
                     };
                 } finally {
                     this.isUpdating = false; // Aktiver knappen igjen
