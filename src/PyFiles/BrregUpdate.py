@@ -10,6 +10,32 @@ api2_blueprint = Blueprint('api2', __name__)
 # SQL Server-tilkobling
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
+def get_last_processed_org_nr():
+    """Hent det siste behandlet org_nr."""
+    try:
+        with psycopg2.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT last_processed_org_nr FROM process_log ORDER BY timestamp DESC LIMIT 1")
+            result = cursor.fetchone()
+            return result[0] if result else None
+    except Exception as e:
+        print(f"Feil ved henting av siste behandlet org_nr: {e}")
+        return None
+
+def update_last_processed_org_nr(org_nr):
+    """Oppdater det siste behandlet org_nr."""
+    try:
+        with psycopg2.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO process_log (last_processed_org_nr)
+                VALUES (%s)
+            """, (org_nr,))
+            conn.commit()
+    except Exception as e:
+        print(f"Feil ved oppdatering av siste behandlet org_nr: {e}")
+
+
 def process_organization_with_single_call(org_nr):
     """
     Gjør ett API-kall til Brreg (enheter eller underenheter), sjekker konkursstatus
@@ -103,6 +129,7 @@ def extract_company_status(data):
     is_konkurs = konkurs or under_avvikling or slettedato is not None
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
+
 def process_all_in_batches(batch_size=50):
     """
     Behandler organisasjonene i mindre batcher og viser fremdrift.
@@ -114,8 +141,21 @@ def process_all_in_batches(batch_size=50):
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")  # Sorter etter id
+            cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")
             org_nrs = [row[0].strip() for row in cursor.fetchall()]
+
+        last_processed_org_nr = get_last_processed_org_nr()
+
+        if last_processed_org_nr:
+            # Finn batchen som inneholder det siste behandlede org_nr
+            start_index = next((i for i, org_nr in enumerate(org_nrs) if org_nr == last_processed_org_nr), None)
+            if start_index is not None:
+                # Start fra neste batch
+                org_nrs = org_nrs[start_index + 1:]
+            else:
+                print(f"Fant ikke siste org_nr ({last_processed_org_nr}) i listen.")
+        else:
+            print("Ingen siste behandlet org_nr funnet, starter fra første batch.")
 
         total = len(org_nrs)
         batches = [org_nrs[i:i + batch_size] for i in range(0, total, batch_size)]
@@ -134,6 +174,9 @@ def process_all_in_batches(batch_size=50):
                 else:
                     error_count += 1
 
+                # Oppdater siste behandlet org_nr under prosesseringen
+                update_last_processed_org_nr(org_nr)
+
             print(f"✅ Ferdig med batch {index}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
 
     except Exception as e:
@@ -143,7 +186,6 @@ def process_all_in_batches(batch_size=50):
     finally:
         print(f"\n🔚 Ferdig! Totalt oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
         return updated_count, no_email_count, error_count
-
 
 
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])

@@ -11,4 +11,5 @@ echo "Using PORT: $PORT"
 # Start backend (Flask via Gunicorn)
 echo "Starting Flask application via Gunicorn..."
 cd /app
-exec gunicorn --bind 0.0.0.0:$PORT src.PyFiles.app:app --timeout 300
+exec gunicorn --workers 4 --bind 0.0.0.0:$PORT src.PyFiles.app:app --timeout 600
+

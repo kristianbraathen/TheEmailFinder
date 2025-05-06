@@ -185,12 +185,14 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5); /* halvgjennomsiktig bakgrunn */
+        background: rgba(0, 0, 0, 0.5); /* Halvgjennomsiktig bakgrunn */
         display: flex;
-        justify-content: center;
-        align-items: center;
+        justify-content: center; /* Horisontalt sentrum */
+        align-items: center; /* Vertikalt sentrum */
         z-index: 1000;
+        transition: opacity 0.3s ease; /* Smooth fade-in for bakgrunn */
     }
+
 
     .popup-content {
         position: fixed; /* Make the popup fixed on the screen */

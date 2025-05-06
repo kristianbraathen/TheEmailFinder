@@ -142,17 +142,25 @@ def search_emails_and_display():
 @api5_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():
     global process_running
-    if process_running:  # Hvis prosessen allerede kjører, returner feil
-        return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
 
-    process_running = True  # Sett prosessen som kjørende
+    with process_lock:
+        print(f"Prosesstart - process_running: {process_running}")  # Logg status
+        if process_running:
+            return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
+
+        process_running = True
+
     try:
         results = search_emails_and_display()
         return jsonify(results), 200
     except Exception as e:
+        print(f"Feil under behandling: {str(e)}")  # Logg feilmeldingen
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
     finally:
-        process_running = False  # Tilbakestill flagget for å tillate nye søk
+        with process_lock:
+            process_running = False
+            print(f"Prosesstopp - process_running: {process_running}")  # Logg status etter prosessen
+
 
 @api5_blueprint.route("/update_email", methods=["POST"])
 def update_email():
@@ -200,15 +208,26 @@ def delete_stored_result():
 @api5_blueprint.route('/start_process', methods=['POST'])
 def start_process_1881():
     global process_running
-    with process_lock:  
+    with process_lock:  # Sikrer trådtrygg tilgang
         if process_running:
             return jsonify({"status": "Process is already running"}), 400
+
         try:
             process_running = True
+            print("Prosess starter...")  # Logg når prosessen starter
+            # Start prosessen her (for eksempel kall til funksjoner for å begynne behandlingen)
+            # Example: start_process_job() 
             return jsonify({"status": "Process started successfully"}), 200
+        
         except Exception as e:
             process_running = False
+            print(f"Feil ved prosessstart: {str(e)}")  # Logg feil for feilsøking
             return jsonify({"status": f"Error starting process: {str(e)}"}), 500
+
+        finally:
+            # Sørg for at prosessen er satt tilbake til False etter at den er ferdig
+            process_running = False
+            print("Prosessen er ferdig, process_running satt tilbake til False.")
 
 @api5_blueprint.route('/stop_process', methods=['POST'])
 def stop_process_1881():
@@ -216,9 +235,16 @@ def stop_process_1881():
     with process_lock:
         if not process_running:
             return jsonify({"status": "Process is not running"}), 400
+
         try:
             process_running = False
+            print("Prosessen er stoppet.")  # Logg når prosessen stoppes
+            # Stopp prosessen her (hvis det er noen bakgrunnsprosess eller langvarig jobb som kan stoppes)
             return jsonify({"status": "Process stopped successfully"}), 200
+        
         except Exception as e:
+            # Hvis det skjer en feil, sett process_running til True igjen for å indikere at prosessen fortsatt er "kjørende"
             process_running = True
+            print(f"Feil ved stopp prosess: {str(e)}")  # Logg feil for feilsøking
             return jsonify({"status": f"Error stopping process: {str(e)}"}), 500
+
