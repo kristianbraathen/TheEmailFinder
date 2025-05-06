@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from flask import Flask, jsonify, Blueprint, request
+from flask_cors import CORS
 from .Db import db
 import re
 from urllib.parse import unquote
