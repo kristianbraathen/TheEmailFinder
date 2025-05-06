@@ -114,7 +114,7 @@ def process_all_in_batches(batch_size=50):
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-             cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")  # Sorter etter id
+            cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")  # Sorter etter id
             org_nrs = [row[0].strip() for row in cursor.fetchall()]
 
         total = len(org_nrs)
