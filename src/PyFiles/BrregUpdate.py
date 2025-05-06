@@ -103,29 +103,28 @@ def extract_company_status(data):
     is_konkurs = konkurs or under_avvikling or slettedato is not None
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
-def process_all_in_batches(batch_size=100):
+def process_all_in_batches(batch_size=50):
     """
-    Behandler organisasjonene i batcher for å unngå timeout.
+    Behandler organisasjonene i mindre batcher og viser fremdrift.
     """
     updated_count = 0
     no_email_count = 0
     error_count = 0
 
     try:
-        # Hent org.nr fra tabellen
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT "Org_nr" FROM imported_table
-            """)
-            # Hent resultatene fra andre kolonne
-            org_nrs = {row[0].strip() for row in cursor.fetchall()}
+             cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")  # Sorter etter id
+            org_nrs = [row[0].strip() for row in cursor.fetchall()]
 
-        # Del opp listen i batcher
-        batches = [list(org_nrs)[i:i + batch_size] for i in range(0, len(org_nrs), batch_size)]
+        total = len(org_nrs)
+        batches = [org_nrs[i:i + batch_size] for i in range(0, total, batch_size)]
 
-        # Behandle hver batch
-        for batch in batches:
+        print(f"Totalt {total} organisasjonsnummer fordelt på {len(batches)} batcher")
+
+        for index, batch in enumerate(batches, start=1):
+            print(f"\n🟡 Starter batch {index}/{len(batches)} ({len(batch)} organisasjoner)")
+
             for org_nr in batch:
                 result = process_organization_with_single_call(org_nr)
                 if result == "updated":
@@ -135,15 +134,16 @@ def process_all_in_batches(batch_size=100):
                 else:
                     error_count += 1
 
-        return updated_count, no_email_count, error_count
+            print(f"✅ Ferdig med batch {index}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
 
     except Exception as e:
-        print(f"Feil oppstod under prosessering: {e}")
+        print(f"❌ Feil oppstod under prosessering: {e}")
         error_count += 1
 
     finally:
-        print(f"Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+        print(f"\n🔚 Ferdig! Totalt oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
         return updated_count, no_email_count, error_count
+
 
 
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])

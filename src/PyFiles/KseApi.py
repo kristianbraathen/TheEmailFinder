@@ -15,6 +15,8 @@ import tempfile
 
 # Flask-app
 api3_blueprint = Blueprint('api3', __name__)
+CORS(api3_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
+
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 connection_string = get_db_connection()

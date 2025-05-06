@@ -16,6 +16,7 @@ from sqlalchemy.sql import text
 
 # Flask-app
 api6_blueprint = Blueprint('api6', __name__)
+CORS(api6_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 

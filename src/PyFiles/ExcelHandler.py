@@ -26,13 +26,16 @@ def drop_table_if_exists(table_name):
     inspector = inspect(engine)
     
     if table_name in inspector.get_table_names():
-        # Hvis tabellen finnes, slett den
         metadata = MetaData()
         table = Table(table_name, metadata, autoload_with=engine)
         table.drop(engine)
         print(f"Tabellen {table_name} ble slettet.")
+        # Fjern fra metadata cache
+        if table_name in Base.metadata.tables:
+            Base.metadata.remove(Base.metadata.tables[table_name])
     else:
         print(f"Tabellen {table_name} finnes ikke.")
+
 
 def create_dynamic_model(table_name, headers):
     """

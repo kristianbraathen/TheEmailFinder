@@ -39,14 +39,15 @@
         </div>
         <!-- Resultatvisning -->
         <div v-if="processingData">
-            <h2>Status</h2>
-            <p>{{ processingData.status }}</p>
+            <h3>Status: {{ processingData.status }}</h3>
 
-            <div v-if="processingData.details">
-                <p>Updated: {{ processingData.details.updated_count }}</p>
-                <p>No email: {{ processingData.details.no_email_count }}</p>
-                <p>Errors: {{ processingData.details.error_count }}</p>
-            </div>
+            <ul v-if="processingData.updated_count !== undefined">
+                <li>✅ Oppdatert: {{ processingData.updated_count }}</li>
+                <li>📭 Ingen e-post: {{ processingData.no_email_count }}</li>
+                <li>❌ Feil: {{ processingData.error_count }}</li>
+            </ul>
+
+            <p v-if="processingData.error">❗Feilmelding: {{ processingData.error }}</p>
         </div>
 
         <!-- Vis resultater hvis søket lykkes -->
