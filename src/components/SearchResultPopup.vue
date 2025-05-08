@@ -136,22 +136,22 @@
  
 <style scoped>
     .popup-overlay {
-        position: absolute; /* Bruker absolute i stedet for fixed */
-        top: 100%; /* Plasserer overlayen rett under popup-content */
-        left: 50%;
-        transform: translateX(-50%); /* Horisontal sentrering */
+        position: absolute; /* Absolutt posisjonering i forhold til popupen */
+        top: 0; /* Plasserer overlayen fra toppen */
+        left: 0;
         width: 100%;
         height: 100%; /* Dekker hele bredden og høyden */
         background: rgba(0, 0, 0, 0.5); /* Halvgjennomsiktig bakgrunn */
-        z-index: 999; /* Sørg for at overlayen er bak popupen */
+        z-index: 999; /* Overlayen er under popupen */
         transition: opacity 0.3s ease; /* Smooth fade-in for bakgrunn */
     }
+
     .popup-content {
-        position: fixed; /* Make the popup fixed on the screen */
-        top: 50%; /* Center vertically */
-        left: 50%; /* Center horizontally */
-        transform: translate(-50%, -50%); /* Adjust for the popup's own dimensions */
-        z-index: 1000; /* Ensure it appears above other elements */
+        position: absolute; /* Popupen plasseres over overlayen */
+        top: 50%; /* Vertikal sentrering i forhold til overlayen */
+        left: 50%; /* Horisontal sentrering i forhold til overlayen */
+        transform: translate(-50%, -50%); /* Justering for popupens egen størrelse */
+        z-index: 1000; /* Popupen er på toppen av overlayen */
         font-family: Arial, sans-serif;
         background-color: #121212; /* Mørk bakgrunn */
         color: #e0e0e0; /* Lys tekst for kontrast */
@@ -163,6 +163,7 @@
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+
 
     .result-card {
         background: #f2f2f2;
