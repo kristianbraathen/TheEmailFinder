@@ -196,8 +196,8 @@ def delete_stored_result():
         print(f"Feil ved sletting av org.nr {org_nr}: {e}")
         return jsonify({"status": "Feil ved sletting"}), 500
 
-@api6_blueprint.route('/start_process', methods=['POST'])
-def start_process():
+@api6_blueprint.route('/start_process_google', methods=['POST'])
+def start_process_google():
     global process_running
 
     with process_lock:  # Sikrer trådtrygg tilgang
@@ -221,24 +221,8 @@ def start_process():
             process_running = False
             print("Prosessen er ferdig, process_running satt tilbake til False.")
 
-@api6_blueprint.route('/restart_process', methods=['POST'])
-def restart_process():
-    global process_running
-    with process_lock:
-        if process_running:
-            # Stop the process if it is running
-            process_running = False
-            time.sleep(1)  # Give some time to ensure the process has stopped
-        try:
-            # Start the process again
-            process_running = True
-            return jsonify({"status": "Process restarted successfully"}), 200
-        except Exception as e:
-            process_running = False
-            return jsonify({"status": f"Error restarting process: {str(e)}"}), 500
-
-@api6_blueprint.route('/stop_process', methods=['POST'])
-def stop_process():
+@api6_blueprint.route('/stop_process_google', methods=['POST'])
+def stop_process_google():
     global process_running
     with process_lock:
         if not process_running:

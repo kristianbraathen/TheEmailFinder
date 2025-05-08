@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 import psycopg2
 from flask import Flask, jsonify, Blueprint
 from .Db import db
@@ -10,112 +10,84 @@ api2_blueprint = Blueprint('api2', __name__)
 # SQL Server-tilkobling
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
-def get_last_processed_org_nr():
-    """Hent det siste behandlet org_nr."""
-    try:
-        with psycopg2.connect(connection_string) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT last_processed_org_nr FROM process_log ORDER BY timestamp DESC LIMIT 1")
-            result = cursor.fetchone()
-            return result[0] if result else None
-    except Exception as e:
-        print(f"Feil ved henting av siste behandlet org_nr: {e}")
-        return None
 
-def update_last_processed_org_nr(org_nr):
-    """Oppdater det siste behandlet org_nr."""
+def get_last_processed_id():
+    """
+    Hent høyeste 'id' fra imported_table hvor Status allerede er satt.
+    """
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO process_log (last_processed_org_nr)
-                VALUES (%s)
-            """, (org_nr,))
-            conn.commit()
+            cursor.execute(
+                'SELECT MAX("id") FROM imported_table WHERE "Status" IS NOT NULL'
+            )
+            result = cursor.fetchone()
+            return result[0] if result and result[0] is not None else 0
     except Exception as e:
-        print(f"Feil ved oppdatering av siste behandlet org_nr: {e}")
+        print(f"Feil ved henting av siste id: {e}")
+        return 0
 
 
 def process_organization_with_single_call(org_nr):
     """
-    Gjør ett API-kall til Brreg (enheter eller underenheter), sjekker konkursstatus
-    og oppdaterer status i databasen.
+    Gjør ett API-kall til Brreg, sjekker status og oppdaterer databasen.
     """
     try:
-        # Prøv enheter først
+        # Hent data fra Brreg API
         response = requests.get(f"https://data.brreg.no/enhetsregisteret/api/enheter/{org_nr}")
         if response.status_code != 200:
-            # Fallback til underenheter hvis enheter feiler
             response = requests.get(f"https://data.brreg.no/enhetsregisteret/api/underenheter/{org_nr}")
-        if response.status_code != 200:
-            print(f"Kunne ikke hente data for orgNr {org_nr}.")
-            return "error"
-
-        response.raise_for_status()  # Raise exception hvis begge feiler
+        response.raise_for_status()
         data = response.json()
 
-        # Sjekk konkursstatus og oppstartsdato
+        # Ekstraher status
         is_konkurs, under_avvikling, slettedato, oppstartsdato = extract_company_status(data)
-
-        # Bestem status
-        Status = ""  # Python-variabelen med stor S for å matche kolonnen i databasen
         if is_konkurs:
-            Status = "konkurs"
+            status = 'konkurs'
         elif under_avvikling:
-            Status = "under avvikling"
+            status = 'under avvikling'
         elif slettedato:
-            Status = "slettet"
+            status = 'slettet'
         elif oppstartsdato and (datetime.now() - oppstartsdato).days < 3 * 365:
-            Status = "oppstart mindre enn 3 år"
+            status = 'oppstart mindre enn 3 år'
         else:
-            Status = "aktiv selskap"
+            status = 'aktiv selskap'
 
-        # Oppdater statusfeltet i databasen
-        try:
-            with psycopg2.connect(connection_string) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                     UPDATE imported_table
-                     SET "Status" = %s
-                     WHERE "Org_nr" = %s
-                """, (Status, org_nr))
-                conn.commit()
-                print(f"Status oppdatert til '{Status}' for orgNr {org_nr}.")
+        # Oppdater status
+        with psycopg2.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE imported_table SET "Status" = %s WHERE "Org_nr" = %s',
+                (status, org_nr)
+            )
+            conn.commit()
 
-            # Hent e-post hvis ingen kritisk status er funnet
-            if not is_konkurs and not under_avvikling and not slettedato:
-                epost = data.get("epostadresse")
+        # Hent e-post om status kun er aktiv
+        if status == 'aktiv selskap':
+            epost = data.get('epostadresse')
+            if epost:
+                with psycopg2.connect(connection_string) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'UPDATE imported_table SET "E_post_1" = %s WHERE "Org_nr" = %s',
+                        (epost, org_nr)
+                    )
+                    conn.commit()
+                return 'updated'
+        return 'no_email'
 
-                if epost:
-                    with psycopg2.connect(connection_string) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                            UPDATE imported_table
-                            SET "E_post_1" = %s
-                            WHERE "Org_nr" = %s
-                        """, (epost, org_nr))
-                        conn.commit()
-                        print(f"Oppdatert e-post for orgNr {org_nr}.")
-                    return "updated"
-
-            print(f"Ingen e-post funnet for orgNr {org_nr}.")
-            return "no_email"
-
-        except requests.RequestException as e:
-            print(f"Feil ved API-forespørsel for orgNr {org_nr}: {e}")
-            return "error"
     except Exception as e:
-        print(f"Feil under prosessering: {e}")
-        return "error"
+        print(f"Feil under prosessering av {org_nr}: {e}")
+        return 'error'
 
 
 def extract_company_status(data):
     """
-    Ekstraherer statusinformasjon fra API-dataene.
+    Ekstraherer konkurs- og dato-informasjon fra API-data.
     """
     konkurs = data.get('konkurs', False)
     under_avvikling = data.get('underAvvikling', False)
-    slettedato_str = data.get('slettedato', None)
+    slettedato_str = data.get('slettedato')
     oppstartsdato_str = data.get('registreringsdatoEnhetsregisteret') or data.get('oppstartsdato')
 
     slettedato = datetime.fromisoformat(slettedato_str) if slettedato_str else None
@@ -126,65 +98,54 @@ def extract_company_status(data):
         except ValueError:
             print(f"Ugyldig datoformat: {oppstartsdato_str}")
 
-    is_konkurs = konkurs or under_avvikling or slettedato is not None
+    is_konkurs = bool(konkurs or under_avvikling or slettedato)
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
 
 def process_all_in_batches(batch_size=50):
     """
-    Behandler organisasjonene i mindre batcher og viser fremdrift.
+    Behandler organisasjoner i batcher basert på siste behandlet id.
     """
-    updated_count = 0
-    no_email_count = 0
-    error_count = 0
+    updated_count = no_email_count = error_count = 0
+    last_id = get_last_processed_id()
+    print(f"Siste behandlet ID: {last_id}")
 
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            cursor.execute("""SELECT "Org_nr" FROM imported_table ORDER BY "id" ASC""")
-            org_nrs = [row[0].strip() for row in cursor.fetchall()]
+            cursor.execute(
+                'SELECT "Org_nr", "id" FROM imported_table WHERE "id" > %s ORDER BY "id" ASC',
+                (last_id,)
+            )
+            rows = cursor.fetchall()
 
-        last_processed_org_nr = get_last_processed_org_nr()
+        if not rows:
+            print("Ingen nye organisasjoner å behandle.")
+            return updated_count, no_email_count, error_count
 
-        if last_processed_org_nr:
-            # Finn batchen som inneholder det siste behandlede org_nr
-            start_index = next((i for i, org_nr in enumerate(org_nrs) if org_nr == last_processed_org_nr), None)
-            if start_index is not None:
-                # Start fra neste batch
-                org_nrs = org_nrs[start_index + 1:]
-            else:
-                print(f"Fant ikke siste org_nr ({last_processed_org_nr}) i listen.")
-        else:
-            print("Ingen siste behandlet org_nr funnet, starter fra første batch.")
+        # Del opp i batcher
+        for batch_start in range(0, len(rows), batch_size):
+            batch = rows[batch_start:batch_start + batch_size]
+            print(f"🟡 Starter batch {batch_start // batch_size + 1}/{(len(rows)-1)//batch_size+1}")
 
-        total = len(org_nrs)
-        batches = [org_nrs[i:i + batch_size] for i in range(0, total, batch_size)]
-
-        print(f"Totalt {total} organisasjonsnummer fordelt på {len(batches)} batcher")
-
-        for index, batch in enumerate(batches, start=1):
-            print(f"\n🟡 Starter batch {index}/{len(batches)} ({len(batch)} organisasjoner)")
-
-            for org_nr in batch:
+            for org_nr, _id in batch:
                 result = process_organization_with_single_call(org_nr)
-                if result == "updated":
+                if result == 'updated':
                     updated_count += 1
-                elif result == "no_email":
+                elif result == 'no_email':
                     no_email_count += 1
                 else:
                     error_count += 1
 
-                # Oppdater siste behandlet org_nr under prosesseringen
-                update_last_processed_org_nr(org_nr)
-
-            print(f"✅ Ferdig med batch {index}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+            print(f"✅ Ferdig batch {batch_start // batch_size + 1}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+            time.sleep(1)
 
     except Exception as e:
-        print(f"❌ Feil oppstod under prosessering: {e}")
+        print(f"Feil under batch-prosessering: {e}")
         error_count += 1
 
     finally:
-        print(f"\n🔚 Ferdig! Totalt oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+        print(f"🔚 Ferdig! Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
         return updated_count, no_email_count, error_count
 
 
@@ -193,10 +154,10 @@ def process_and_clean_endpoint():
     try:
         updated, no_email, errors = process_all_in_batches()
         return jsonify({
-            "status": "Behandling fullført.",
-            "updated_count": updated,
-            "no_email_count": no_email,
-            "error_count": errors
+            'status': 'Behandling fullført.',
+            'updated_count': updated,
+            'no_email_count': no_email,
+            'error_count': errors
         }), 200
     except Exception as e:
-        return jsonify({"error": f"Feil oppstod: {str(e)}"}), 500
+        return jsonify({'error': f'Feil oppstod: {e}'}), 500

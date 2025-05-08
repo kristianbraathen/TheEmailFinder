@@ -143,7 +143,7 @@
             async startProcess() {
                 if (!this.processRunning) {
                     try {
-                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/start_process");
+                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/start_process_1881");
                         alert(response.data.status);
                         this.processRunning = true;  // Sett prosessen til å være aktiv
                         this.currentSearchQuery = "Prosessen kjører..."; // Eksempel på søkeprogresjon
@@ -160,7 +160,7 @@
             },
             async stopProcess() {
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/stop_process");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/stop_process_1881");
                     alert(response.data.status);
                     this.processRunning = false;
                     this.currentSearchQuery = "Prosessen er stoppet."; // Eksempel på søkeprogresjon
@@ -180,16 +180,14 @@
 <style scoped>
     /* Popup styling */
     .popup-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
+        position: absolute; /* Bruker absolute i stedet for fixed */
+        top: 100%; /* Plasserer overlayen rett under popup-content */
+        left: 50%;
+        transform: translateX(-50%); /* Horisontal sentrering */
         width: 100%;
-        height: 100%;
+        height: 100%; /* Dekker hele bredden og høyden */
         background: rgba(0, 0, 0, 0.5); /* Halvgjennomsiktig bakgrunn */
-        display: flex;
-        justify-content: center; /* Horisontalt sentrum */
-        align-items: center; /* Vertikalt sentrum */
-        z-index: 1000;
+        z-index: 999; /* Sørg for at overlayen er bak popupen */
         transition: opacity 0.3s ease; /* Smooth fade-in for bakgrunn */
     }
 

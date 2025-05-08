@@ -198,7 +198,7 @@ def delete_stored_result():
         print(f"Feil ved sletting av org.nr {org_nr}: {e}")
         return jsonify({"status": "Feil ved sletting"}), 500
 
-@api3_blueprint.route('/start_process', methods=['POST'])
+@api3_blueprint.route('/start_process_kse', methods=['POST'])
 def start_process():
     global process_running
 
@@ -224,7 +224,7 @@ def start_process():
             print("Prosessen er ferdig, process_running satt tilbake til False.")
 
 
-@api3_blueprint.route('/stop_process', methods=['POST'])
+@api3_blueprint.route('/stop_process_kse', methods=['POST'])
 def stop_process():
     global process_running
     with process_lock:
