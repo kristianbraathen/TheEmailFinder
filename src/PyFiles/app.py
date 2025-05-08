@@ -48,7 +48,8 @@ db.init_app(app)
 
 # Ensure uploads folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 
 # Create tables in the database (this should happen after db.init_app)
 with app.app_context():
