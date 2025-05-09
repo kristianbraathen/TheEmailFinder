@@ -158,32 +158,30 @@
 <style scoped>
     /* Popup styling */
     .popup-overlay {
-        position: absolute; /* Absolutt posisjonering i forhold til popupen */
-        top: 0; /* Plasserer overlayen fra toppen */
+        position: fixed; /* Fixed positioning to cover the entire viewport */
+        top: 0;
         left: 0;
         width: 100%;
-        height: 100%; /* Dekker hele bredden og høyden */
-        background: rgba(0, 0, 0, 0.5); /* Halvgjennomsiktig bakgrunn */
-        z-index: 999; /* Overlayen er under popupen */
-        transition: opacity 0.3s ease; /* Smooth fade-in for bakgrunn */
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        z-index: 999;
+        display: flex; /* Flexbox for centering */
+        justify-content: center; /* Horizontal centering */
+        align-items: center; /* Vertical centering */
     }
 
     .popup-content {
-        position: absolute; /* Popupen plasseres over overlayen */
-        top: 50%; /* Vertikal sentrering i forhold til overlayen */
-        left: 50%; /* Horisontal sentrering i forhold til overlayen */
-        transform: translate(-50%, -50%); /* Justering for popupens egen størrelse */
-        z-index: 1000; /* Popupen er på toppen av overlayen */
-        font-family: Arial, sans-serif;
-        background-color: #121212; /* Mørk bakgrunn */
-        color: #e0e0e0; /* Lys tekst for kontrast */
+        position: relative; /* Relative to the flex container */
+        background-color: #121212; /* Dark background */
+        color: #e0e0e0; /* Light text for contrast */
         padding: 20px;
-        max-width: 600px;
-        width: 90%; /* Gir litt luft på sidene */
-        max-height: 80%; /* Begrens høyden */
-        overflow-y: auto; /* Legg til rull hvis innholdet er for langt */
+        max-width: 600px; /* Limit the width */
+        width: 90%; /* Adjust width for smaller screens */
+        max-height: 80%; /* Limit the height */
+        overflow-y: auto; /* Add scroll if content overflows */
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        font-family: Arial, sans-serif;
     }
 
 

@@ -39,9 +39,9 @@
         </div>
         <!-- Resultatvisning -->
         <div v-if="processingData">
-            <h3>Status: {{ processingData.status }}</h3>
+            <h3>Status: {{ status }}</h3>
 
-            <ul v-if="processingData.updated_count !== undefined">
+            <ul>
                 <li>✅ Oppdatert: {{ processingData.updated_count }}</li>
                 <li>📭 Ingen e-post: {{ processingData.no_email_count }}</li>
                 <li>❌ Feil: {{ processingData.error_count }}</li>
@@ -49,6 +49,7 @@
 
             <p v-if="processingData.error">❗Feilmelding: {{ processingData.error }}</p>
         </div>
+
 
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
@@ -97,26 +98,42 @@
         },
         methods: {
             async processAndCleanOrganizations() {
-                this.isUpdating = true; // Deaktiver knappen
-                this.status = "Pending..."; // Startstatus
+                this.isUpdating = true; // Disable the button
+                this.status = "Processing..."; // Start status
+                this.processingData = { updated_count: 0, no_email_count: 0, error_count: 0 }; // Initialize counts
 
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations", {}, {
+                        responseType: "stream", // Ensure streaming response
+                    });
 
-                    // Sett hele responsen som processingData
-                    this.processingData = response.data;
+                    // Process the response batch by batch
+                    response.data.on("data", (chunk) => {
+                        const batchResult = JSON.parse(chunk);
+                        if (batchResult.error) {
+                            console.error("Error in batch:", batchResult.error);
+                            this.processingData.error_count += 1;
+                        } else {
+                            this.processingData.updated_count += batchResult.updated_count;
+                            this.processingData.no_email_count += batchResult.no_email_count;
+                            this.processingData.error_count += batchResult.error_count;
+                        }
+                    });
+
+                    response.data.on("end", () => {
+                        this.status = "Processing complete!";
+                    });
                 } catch (error) {
-                    console.error("Feil under prosessering:", error);
-
-                    // Hvis det oppstår en feil under API-kallet, vis en feilstatus
+                    console.error("Error during processing:", error);
                     this.processingData = {
-                        status: "En feil oppsto under prosesseringen.",
+                        status: "An error occurred during processing.",
                         error: error.message,
                     };
                 } finally {
-                    this.isUpdating = false; // Aktiver knappen igjen
+                    this.isUpdating = false; // Re-enable the button
                 }
             },
+
             async manualSearch() {
                 if (!this.search_by_company_name) {
                     this.status = "Vennligst skriv inn en bedrift.";
@@ -195,6 +212,16 @@
             transform: rotate(360deg);
         }
     }
+    /* Ensure white font for the processingData section */
+    div[processingData] {
+        color: #ffffff; /* White font */
+    }
+    div[processingData] h3,
+    div[processingData] ul,
+    div[processingData] p {
+        color: #ffffff; /* Ensure all child elements have white font */
+    }
+
 
     /* Generell styling */
     body {

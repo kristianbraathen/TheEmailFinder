@@ -102,7 +102,7 @@ def extract_company_status(data):
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
 
-def process_all_in_batches(batch_size=50):
+def process_all_in_batches(batch_size=100):
     """
     Behandler organisasjoner i batcher basert på siste behandlet id.
     """
@@ -137,27 +137,38 @@ def process_all_in_batches(batch_size=50):
                 else:
                     error_count += 1
 
+            # Log batch results
             print(f"✅ Ferdig batch {batch_start // batch_size + 1}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
-            time.sleep(1)
+
+            # Return intermediate results for the current batch
+            yield {
+                "batch_number": batch_start // batch_size + 1,
+                "updated_count": updated_count,
+                "no_email_count": no_email_count,
+                "error_count": error_count,
+            }
+
+            # Reset counts for the next batch
+            updated_count = no_email_count = error_count = 0
 
     except Exception as e:
         print(f"Feil under batch-prosessering: {e}")
-        error_count += 1
+        yield {"error": str(e)}
 
     finally:
-        print(f"🔚 Ferdig! Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
-        return updated_count, no_email_count, error_count
-
+        print("🔚 Ferdig med alle batcher.")
 
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
 def process_and_clean_endpoint():
     try:
-        updated, no_email, errors = process_all_in_batches()
+        results = []
+        for batch_result in process_all_in_batches():
+            results.append(batch_result)
+            # Optionally, you can log or store intermediate results here
+
         return jsonify({
             'status': 'Behandling fullført.',
-            'updated_count': updated,
-            'no_email_count': no_email,
-            'error_count': errors
+            'batches': results
         }), 200
     except Exception as e:
         return jsonify({'error': f'Feil oppstod: {e}'}), 500

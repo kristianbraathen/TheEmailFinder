@@ -100,7 +100,7 @@ def search_emails_and_display():
             query = """
             SELECT "Org_nr", Firmanavn
             FROM imported_table
-            WHERE Status = 'aktiv selskap' AND "E_post_1" IS NULL
+            WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL
             """
             cursor.execute(query)
             rows = cursor.fetchall()
