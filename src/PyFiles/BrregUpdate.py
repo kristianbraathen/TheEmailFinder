@@ -104,31 +104,30 @@ def extract_company_status(data):
 
 def process_all_in_batches(batch_size=100):
     """
-    Behandler organisasjoner i batcher basert på siste behandlet id.
+    Processes all organizations in batches, restarting the function after each batch.
     """
     updated_count = no_email_count = error_count = 0
     last_id = get_last_processed_id()
     print(f"Siste behandlet ID: {last_id}")
 
     try:
-        with psycopg2.connect(connection_string) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                'SELECT "Org_nr", "id" FROM imported_table WHERE "id" > %s ORDER BY "id" ASC',
-                (last_id,)
-            )
-            rows = cursor.fetchall()
+        while True:
+            with psycopg2.connect(connection_string) as conn:
+                cursor = conn.cursor()
+                # Fetch the next batch of rows
+                cursor.execute(
+                    'SELECT "Org_nr", "id" FROM imported_table WHERE "id" > %s ORDER BY "id" ASC LIMIT %s',
+                    (last_id, batch_size)
+                )
+                rows = cursor.fetchall()
 
-        if not rows:
-            print("Ingen nye organisasjoner å behandle.")
-            return updated_count, no_email_count, error_count
+            if not rows:
+                print("Ingen flere organisasjoner å behandle.")
+                break
 
-        # Del opp i batcher
-        for batch_start in range(0, len(rows), batch_size):
-            batch = rows[batch_start:batch_start + batch_size]
-            print(f"🟡 Starter batch {batch_start // batch_size + 1}/{(len(rows)-1)//batch_size+1}")
+            print(f"🟡 Starter batch med {len(rows)} organisasjoner.")
 
-            for org_nr, _id in batch:
+            for org_nr, _id in rows:
                 result = process_organization_with_single_call(org_nr)
                 if result == 'updated':
                     updated_count += 1
@@ -137,15 +136,18 @@ def process_all_in_batches(batch_size=100):
                 else:
                     error_count += 1
 
+                # Update the last processed ID
+                last_id = _id
+
             # Log batch results
-            print(f"✅ Ferdig batch {batch_start // batch_size + 1}. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+            print(f"✅ Ferdig batch. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
 
             # Return intermediate results for the current batch
             yield {
-                "batch_number": batch_start // batch_size + 1,
                 "updated_count": updated_count,
                 "no_email_count": no_email_count,
                 "error_count": error_count,
+                "last_id": last_id,
             }
 
             # Reset counts for the next batch

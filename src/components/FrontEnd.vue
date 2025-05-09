@@ -103,26 +103,25 @@
                 this.processingData = { updated_count: 0, no_email_count: 0, error_count: 0 }; // Initialize counts
 
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations", {}, {
-                        responseType: "stream", // Ensure streaming response
-                    });
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
 
-                    // Process the response batch by batch
-                    response.data.on("data", (chunk) => {
-                        const batchResult = JSON.parse(chunk);
-                        if (batchResult.error) {
-                            console.error("Error in batch:", batchResult.error);
-                            this.processingData.error_count += 1;
-                        } else {
-                            this.processingData.updated_count += batchResult.updated_count;
-                            this.processingData.no_email_count += batchResult.no_email_count;
-                            this.processingData.error_count += batchResult.error_count;
-                        }
-                    });
+                    // Process the response containing all batch results
+                    if (response.data && response.data.batches) {
+                        response.data.batches.forEach((batchResult) => {
+                            if (batchResult.error) {
+                                console.error("Error in batch:", batchResult.error);
+                                this.processingData.error_count += 1;
+                            } else {
+                                this.processingData.updated_count += batchResult.updated_count;
+                                this.processingData.no_email_count += batchResult.no_email_count;
+                                this.processingData.error_count += batchResult.error_count;
+                            }
+                        });
 
-                    response.data.on("end", () => {
                         this.status = "Processing complete!";
-                    });
+                    } else {
+                        this.status = "No data returned from the server.";
+                    }
                 } catch (error) {
                     console.error("Error during processing:", error);
                     this.processingData = {
@@ -133,7 +132,6 @@
                     this.isUpdating = false; // Re-enable the button
                 }
             },
-
             async manualSearch() {
                 if (!this.search_by_company_name) {
                     this.status = "Vennligst skriv inn en bedrift.";
