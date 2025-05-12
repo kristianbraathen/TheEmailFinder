@@ -81,9 +81,13 @@ def google_custom_search(query):
 # Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
-        driver = create_driver()  # Opprett WebDriver her, ikke globalt
+        # Initialize driver inside the function to avoid global instantiation
+        driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
         driver.get(url)
-        time.sleep(5)  
+
+        # Wait for the page to load (up to 10 seconds)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
         page_source = driver.page_source
         emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
         driver.quit()
@@ -93,51 +97,77 @@ def extract_email_selenium(url):
         return []
 
 # Funksjon for å søke etter firmaer fra databasen og vise e-poster
-def search_emails_and_display():
+def search_emails_and_display(batch_size=5):
+    """
+    Processes emails in small batches using the `id` column for ordering.
+    """
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            query = """
-            SELECT "Org_nr", Firmanavn
-            FROM imported_table
-            WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL
-            """
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            global process_running
+            last_id = 0  # Start from the first row
             results = []
-            for row in rows:
-                if not process_running:  
-                    print("Prosessen er stoppet.")
-                    break
+            global process_running
 
-                org_nr, company_name = row
-                search_query = f'"{company_name}" "Norge" '
-                print(f"Søker med query:{search_query}")
-                
-                search_results = google_custom_search(search_query)
-                all_emails = []
-                for url in search_results:
-                    if not process_running:  
+            while True:
+                # Fetch a small batch of rows based on the `id` column
+                query = f"""
+                    SELECT "id", "Org_nr", "Firmanavn"
+                    FROM imported_table
+                    WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND "id" > {last_id}
+                    ORDER BY "id" ASC
+                    LIMIT {batch_size}
+                """
+                cursor.execute(query)
+                rows = cursor.fetchall()
+
+                if not rows:
+                    print("Ingen flere rader å behandle.")
+                    break  # Exit the loop if no more rows are found
+
+                print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
+
+                for row in rows:
+                    if not process_running:  # Check if the process should stop
                         print("Prosessen er stoppet.")
                         break
-                    emails = extract_email_selenium(url)
-                    all_emails.extend(emails)
 
-                unique_emails = set(all_emails)
-                email_list = list(unique_emails)
+                    row_id, org_nr, company_name = row
 
-                if email_list:
-                    results.append({
-                        "org_nr": org_nr,
-                        "company_name": company_name,
-                        "emails": email_list
-                    })
+                    # Google Custom Search with company name and Norway
+                    search_query = f'"{company_name}" "Norge"'
+                    print(f"Søker med query: {search_query}")
+
+                    search_results = google_custom_search(search_query)
+                    all_emails = []
+                    for url in search_results:
+                        if not process_running:  # Check if the process should stop
+                            print("Prosessen er stoppet.")
+                            break
+                        emails = extract_email_selenium(url)
+                        all_emails.extend(emails)
+
+                    # Remove duplicate emails
+                    unique_emails = set(all_emails)
+                    email_list = list(unique_emails)
+
+                    # Save the results
+                    if email_list:
+                        results.append({
+                            "id": row_id,
+                            "org_nr": org_nr,
+                            "company_name": company_name,
+                            "emails": email_list
+                        })
+
+                # Update the last processed `id` for the next batch
+                last_id = rows[-1][0]  # The `id` of the last row in the current batch
+
             return results
 
     except Exception as e:
         print(f"Feil: {e}")
         return []
+
 
 @api5_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():

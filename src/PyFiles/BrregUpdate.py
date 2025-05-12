@@ -102,7 +102,7 @@ def extract_company_status(data):
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
 
-def process_all_in_batches(batch_size=100):
+def process_all_in_batches(batch_size=50):
     """
     Processes all organizations in batches, restarting the function after each batch.
     """

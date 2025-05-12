@@ -178,8 +178,8 @@
     /* Popup styling */
     .popup-overlay {
         position: fixed; /* Fixed positioning to cover the entire viewport */
-        top: 10%;
-        left: 10%;
+        top: 50%;
+        left: 50%;
         width: 75%;
         height: 75%;
         background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */

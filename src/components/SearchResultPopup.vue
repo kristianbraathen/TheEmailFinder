@@ -137,10 +137,10 @@
 <style scoped>
     .popup-overlay {
         position: fixed; /* Fixed positioning to cover the entire viewport */
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 50%;
+        left: 50%;
+        width: 75%;
+        height: 75%;
         background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
         z-index: 999;
         display: flex; /* Flexbox for centering */
