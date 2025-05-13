@@ -10,6 +10,8 @@ api2_blueprint = Blueprint('api2', __name__)
 # SQL Server-tilkobling
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
+# Track the latest processed ID globally for error reporting
+latest_last_id = 0
 
 def get_last_processed_id():
     """
@@ -107,9 +109,11 @@ def process_all_in_batches(batch_size=50):
     Processes all organizations in batches, restarting the function after each batch.
     Prints running totals for progress tracking.
     """
+    global latest_last_id
     updated_count = no_email_count = error_count = 0
     total_updated = total_no_email = total_error = 0  # Running totals
     last_id = get_last_processed_id()
+    latest_last_id = last_id  # Initialize with the starting point
     print(f"Siste behandlet ID: {last_id}")
 
     try:
@@ -140,6 +144,7 @@ def process_all_in_batches(batch_size=50):
 
                 # Update the last processed ID
                 last_id = _id
+                latest_last_id = last_id  # Update global progress
 
             # Update running totals
             total_updated += updated_count
@@ -166,7 +171,7 @@ def process_all_in_batches(batch_size=50):
 
     except Exception as e:
         print(f"Feil under batch-prosessering: {e}")
-        yield {"error": str(e)}
+        yield {"error": str(e), "last_id": latest_last_id}
 
     finally:
         print("🔚 Ferdig med alle batcher.")
@@ -174,6 +179,7 @@ def process_all_in_batches(batch_size=50):
 
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
 def process_and_clean_endpoint():
+    from .BrregUpdate import latest_last_id  # Ensure we get the global variable
     try:
         results = []
         for batch_result in process_all_in_batches():
@@ -185,4 +191,6 @@ def process_and_clean_endpoint():
             'batches': results
         }), 200
     except Exception as e:
-        return jsonify({'error': f'Feil oppstod: {e}'}), 500
+        # Return last_id if available
+        return jsonify({'error': f'Feil oppstod: {e}', 'last_id': latest_last_id}), 500
+

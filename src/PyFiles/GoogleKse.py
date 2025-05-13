@@ -14,6 +14,8 @@ import chromedriver_autoinstaller
 import os
 import tempfile
 from sqlalchemy.sql import text
+import threading
+    
 
 # Flask-app
 api6_blueprint = Blueprint('api6', __name__)
@@ -221,26 +223,27 @@ def delete_stored_result():
 def start_process_google():
     global process_running
 
-    with process_lock:  # Sikrer trådtrygg tilgang
+    with process_lock:
         if process_running:
             return jsonify({"status": "Process is already running"}), 400
 
-        try:
-            process_running = True
-            print("Prosess starter...")  # Logg når prosessen starter
-            # Start prosessen her (for eksempel kall til funksjoner for å begynne behandlingen)
-            # Example: start_process_job() 
-            return jsonify({"status": "Process started successfully"}), 200
-        
-        except Exception as e:
-            process_running = False
-            print(f"Feil ved prosessstart: {str(e)}")  # Logg feil for feilsøking
-            return jsonify({"status": f"Error starting process: {str(e)}"}), 500
+        process_running = True
+        print("Prosess starter...")
 
-        finally:
-            # Sørg for at prosessen er satt tilbake til False etter at den er ferdig
-            process_running = False
-            print("Prosessen er ferdig, process_running satt tilbake til False.")
+        def background_search():
+            try:
+                search_emails_and_display()
+            except Exception as e:
+                print(f"Feil ved prosessstart: {str(e)}")  # Logg feil for feilsøking
+            finally:
+                global process_running
+                with process_lock:
+                    process_running = False
+                print("Prosessen er ferdig, process_running satt tilbake til False.")
+
+        threading.Thread(target=background_search, daemon=True).start()
+
+    return jsonify({"status": "Process started and search running in background."}), 200
 
 @api6_blueprint.route('/stop_process_google', methods=['POST'])
 def stop_process_google():

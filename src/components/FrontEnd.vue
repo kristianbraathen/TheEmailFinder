@@ -38,7 +38,7 @@
             <button @click="manualSearch">Søk</button>
         </div>
         <!-- Resultatvisning -->
-        <<div v-if="processingData">
+        <div v-if="processingData">
             <h3>Status: {{ status }}</h3>
             <ul>
                 <li>✅ Oppdatert (batch): {{ processingData.updated_count }}</li>
@@ -49,9 +49,11 @@
                 <li>🔢 Totalt oppdatert: {{ processingData.total_updated }}</li>
                 <li>🔢 Totalt ingen e-post: {{ processingData.total_no_email }}</li>
                 <li>🔢 Totalt feil: {{ processingData.total_error }}</li>
-                <li>🔢 Siste behandlede ID: {{ processingData.last_id }}</li>
             </ul>
-            <p v-if="processingData.error">❗Feilmelding: {{ processingData.error }}</p>
+            <p v-if="processingData.error">
+                ❗Feilmelding: {{ processingData.error }}
+                <span v-if="processingData.last_id"> (Siste behandlede ID: {{ processingData.last_id }})</span>
+            </p>
         </div>
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
@@ -137,9 +139,13 @@
                     }
                 } catch (error) {
                     console.error("Error during processing:", error);
+                    let lastId = error.response && error.response.data && error.response.data.last_id
+                        ? error.response.data.last_id
+                        : null;
                     this.processingData = {
                         status: "An error occurred during processing.",
                         error: error.message,
+                        last_id: lastId
                     };
                 } finally {
                     this.isUpdating = false; // Re-enable the button
