@@ -105,8 +105,10 @@ def extract_company_status(data):
 def process_all_in_batches(batch_size=50):
     """
     Processes all organizations in batches, restarting the function after each batch.
+    Prints running totals for progress tracking.
     """
     updated_count = no_email_count = error_count = 0
+    total_updated = total_no_email = total_error = 0  # Running totals
     last_id = get_last_processed_id()
     print(f"Siste behandlet ID: {last_id}")
 
@@ -139,14 +141,23 @@ def process_all_in_batches(batch_size=50):
                 # Update the last processed ID
                 last_id = _id
 
-            # Log batch results
+            # Update running totals
+            total_updated += updated_count
+            total_no_email += no_email_count
+            total_error += error_count
+
+            # Log batch and running totals
             print(f"✅ Ferdig batch. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
+            print(f"🔢 Totalt så langt: Oppdatert: {total_updated}, Ingen e-post: {total_no_email}, Feil: {total_error}")
 
             # Return intermediate results for the current batch
             yield {
                 "updated_count": updated_count,
                 "no_email_count": no_email_count,
                 "error_count": error_count,
+                "total_updated": total_updated,
+                "total_no_email": total_no_email,
+                "total_error": total_error,
                 "last_id": last_id,
             }
 
@@ -159,6 +170,7 @@ def process_all_in_batches(batch_size=50):
 
     finally:
         print("🔚 Ferdig med alle batcher.")
+
 
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
 def process_and_clean_endpoint():

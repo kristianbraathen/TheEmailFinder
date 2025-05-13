@@ -40,15 +40,19 @@
         <!-- Resultatvisning -->
         <div v-if="processingData">
             <h3>Status: {{ status }}</h3>
-
             <ul>
-                <li>✅ Oppdatert: {{ processingData.updated_count }}</li>
-                <li>📭 Ingen e-post: {{ processingData.no_email_count }}</li>
-                <li>❌ Feil: {{ processingData.error_count }}</li>
+                <li>✅ Oppdatert (batch): {{ processingData.updated_count }}</li>
+                <li>📭 Ingen e-post (batch): {{ processingData.no_email_count }}</li>
+                <li>❌ Feil (batch): {{ processingData.error_count }}</li>
             </ul>
-
+            <ul>
+                <li>🔢 Totalt oppdatert: {{ processingData.total_updated }}</li>
+                <li>🔢 Totalt ingen e-post: {{ processingData.total_no_email }}</li>
+                <li>🔢 Totalt feil: {{ processingData.total_error }}</li>
+            </ul>
             <p v-if="processingData.error">❗Feilmelding: {{ processingData.error }}</p>
         </div>
+
 
 
         <!-- Vis resultater hvis søket lykkes -->
@@ -100,7 +104,15 @@
             async processAndCleanOrganizations() {
                 this.isUpdating = true; // Disable the button
                 this.status = "Processing..."; // Start status
-                this.processingData = { updated_count: 0, no_email_count: 0, error_count: 0 }; // Initialize counts
+                this.processingData = {
+                    updated_count: 0,
+                    no_email_count: 0,
+                    error_count: 0,
+                    total_updated: 0,
+                    total_no_email: 0,
+                    total_error: 0
+                };
+                     // Initialize counts
 
                 try {
                     const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
@@ -115,9 +127,12 @@
                                 this.processingData.updated_count += batchResult.updated_count;
                                 this.processingData.no_email_count += batchResult.no_email_count;
                                 this.processingData.error_count += batchResult.error_count;
+                                // Update running totals
+                                this.processingData.total_updated = batchResult.total_updated;
+                                this.processingData.total_no_email = batchResult.total_no_email;
+                                this.processingData.total_error = batchResult.total_error;
                             }
                         });
-
                         this.status = "Processing complete!";
                     } else {
                         this.status = "No data returned from the server.";

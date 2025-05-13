@@ -134,17 +134,25 @@
                     alert("Prosessen kjører allerede.");
                 }
             },     
-
             async stopProcess() {
                 try {
                     const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/stop_process_google");
                     alert(response.data.status);
                     this.processRunning = false;
-                    this.currentSearchQuery = "Prosessen er stoppet."; // Eksempel på søkeprogresjon
+                    this.currentSearchQuery = 'Klikk "Start Prosessen" for å begynne.'; // Always reset
                 } catch (error) {
+                    // If backend returns 400 (process not running), still reset the UI
+                    if (error.response && error.response.status === 400) {
+                        alert(error.response.data.status || "Prosessen var allerede stoppet.");
+                    } else {
+                        alert("Feil under stopp av prosess.");
+                    }
+                    this.processRunning = false;
+                    this.currentSearchQuery = 'Klikk "Start Prosessen" for å begynne.'; // Always reset
                     console.error("Feil under stopp:", error);
                 }
             },
+
             // Close the popup and notify the parent component
             closePopup() {
                 this.$emit("close");
@@ -157,31 +165,32 @@
 <style scoped>
     /* Popup styling */
     .popup-overlay {
-        position: fixed; /* Fixed positioning to cover the entire viewport */
+        position: fixed;
         top: 50%;
         left: 50%;
-        width: 75%;
-        height: 75%;
-        background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        width: 75vw;
+        height: 75vh;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 999;
-        display: flex; /* Flexbox for centering */
-        justify-content: center; /* Horizontal centering */
-        align-items: center; /* Vertical centering */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
     }
 
     .popup-content {
-        position: relative; /* Relative to the flex container */
-        background-color: #121212; /* Dark background */
-        color: #e0e0e0; /* Light text for contrast */
+        background-color: #121212;
+        color: #e0e0e0;
         padding: 20px;
-        max-width: 600px; /* Limit the width */
-        width: 90%; /* Adjust width for smaller screens */
-        max-height: 80%; /* Limit the height */
-        overflow-y: auto; /* Add scroll if content overflows */
+        width: 90%;
+        height: 90%;
+        overflow-y: auto;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         font-family: Arial, sans-serif;
     }
+
 
 
     .emailresults {
