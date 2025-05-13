@@ -38,7 +38,7 @@
             <button @click="manualSearch">Søk</button>
         </div>
         <!-- Resultatvisning -->
-        <div v-if="processingData">
+        <<div v-if="processingData">
             <h3>Status: {{ status }}</h3>
             <ul>
                 <li>✅ Oppdatert (batch): {{ processingData.updated_count }}</li>
@@ -49,12 +49,10 @@
                 <li>🔢 Totalt oppdatert: {{ processingData.total_updated }}</li>
                 <li>🔢 Totalt ingen e-post: {{ processingData.total_no_email }}</li>
                 <li>🔢 Totalt feil: {{ processingData.total_error }}</li>
+                <li>🔢 Siste behandlede ID: {{ processingData.last_id }}</li>
             </ul>
             <p v-if="processingData.error">❗Feilmelding: {{ processingData.error }}</p>
         </div>
-
-
-
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
             <h2>Søkeresultater</h2>

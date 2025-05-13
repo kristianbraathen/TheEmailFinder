@@ -143,7 +143,7 @@
             },
             async stopProcess() {
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/stop_process_google");
+                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/stop_process_kse");
                     alert(response.data.status);
                     this.processRunning = false;
                     this.currentSearchQuery = 'Klikk "Start Prosessen" for å begynne.'; // Always reset

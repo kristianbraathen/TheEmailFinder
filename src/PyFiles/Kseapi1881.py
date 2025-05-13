@@ -259,19 +259,20 @@ def start_process_1881():
             process_running = False
             print("Prosessen er ferdig, process_running satt tilbake til False.")
 
-@api5_blueprint.route('/stop_process', methods=['POST'])
+@api5_blueprint.route('/stop_process_1881, methods=['POST'])
 def stop_process_1881():
     global process_running
     with process_lock:
         if not process_running:
-            return jsonify({"status": "Process is not running"}), 400
+            # Always return 200, but with a message
+            return jsonify({"status": "Process was not running (already stopped)."}), 200
 
         try:
             process_running = False
             print("Prosessen er stoppet.")  # Logg når prosessen stoppes
             # Stopp prosessen her (hvis det er noen bakgrunnsprosess eller langvarig jobb som kan stoppes)
-            return jsonify({"status": "Process stopped successfully"}), 200
-        
+            return jsonify({"status": "Process stopped successfully."}), 200
+
         except Exception as e:
             # Hvis det skjer en feil, sett process_running til True igjen for å indikere at prosessen fortsatt er "kjørende"
             process_running = True
