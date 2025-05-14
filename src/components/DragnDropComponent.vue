@@ -9,7 +9,10 @@
             <p v-if="!file">Dra og slipp Excel-filen her</p>
             <p v-else>{{ file.name }}</p>
         </div>
-        <button v-if="file" @click="uploadFile">Last opp fil</button>
+        <button v-if="file" @click="uploadFile" :disabled="loading">
+            <span v-if="loading" class="spinner"></span>
+            {{ loading ? 'Laster opp...' : 'Last opp fil' }}
+        </button>
     </div>
 </template>
 
@@ -21,6 +24,8 @@
             return {
                 file: null,
                 isDragging: false,
+                loading: false,
+
             };
         },
         methods: {
@@ -50,6 +55,7 @@
                     alert("Vennligst velg en fil å laste opp.");
                     return;
                 }
+                this.loading = true;
                 const formData = new FormData();
                 formData.append("file", this.file);
 
@@ -65,9 +71,11 @@
                     alert("Fil lastet opp vellykket!");
                 } catch (error) {
                     console.error("Feil ved opplasting:", error);
-                    alert("Feil ved opplasting: " + error.response?.data?.error || error.message);
+                    alert("Feil ved opplasting: " + (error.response?.data?.error || error.message));
+                } finally {
+                    this.loading = false;
                 }
-            },
+            }
         },
     };
 </script>
@@ -87,7 +95,23 @@
         .drop-area.dragging {
             background-color: #f0f0f0;
         }
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
 
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
     button {
         margin-top: 10px;
         padding: 10px 20px;

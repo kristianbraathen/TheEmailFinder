@@ -63,32 +63,32 @@
         <!-- Drag-and-drop komponent -->
         <DragnDropComponent></DragnDropComponent>
         <ExcelOut></ExcelOut>
-
     </div>
 </template>
 
 <script>
     import axios from "axios";
     import DragnDropComponent from "./DragnDropComponent.vue";
-    import KSEPopUP from "./KSEPopUP.vue";  // Importere KSEPopUP-komponenten
-    import Kse1881PopUP from "./Kse1881PopUP.vue";  // Importere Kse1881PopUP-komponenten
-    import ExcelOut from "./ExcelOut.vue";  // Importere ExcelOut-komponenten
+    import KSEPopUP from "./KSEPopUP.vue";
+    import Kse1881PopUP from "./Kse1881PopUP.vue";
+    import ExcelOut from "./ExcelOut.vue";
     import GoogleKsePopup from "./GoogleKsePopup.vue";
     import SearchResultPopup from "./SearchResultPopup.vue";
 
     export default {
         data() {
             return {
-                processingData: null, // Status for API-respons
-                search_by_company_name: "", // For manuelt søk
-                searchResults: null, // Resultater fra manuelt søk
-                isUpdating: false, // For å deaktivere knappen under prosessering
+                processingData: null,
+                search_by_company_name: "",
+                searchResults: null,
+                isUpdating: false,
                 showPopup1: false,
-                showPopup2: false,// Tilstand for å vise popup
+                showPopup2: false,
                 showPopup3: false,
                 showPopup4: false,
-                companies: [], // Selskapsdata for popup
-                status: "", // Statusmelding
+                companies: [],
+                status: "",
+                pollingInterval: null
             };
         },
         components: {
@@ -98,57 +98,75 @@
             ExcelOut,
             GoogleKsePopup,
             SearchResultPopup
-
         },
         methods: {
             async processAndCleanOrganizations() {
-                this.isUpdating = true; // Disable the button
-                this.status = "Processing..."; // Start status
+                this.isUpdating = true;
+                this.status = "Processing...";
                 this.processingData = {
                     updated_count: 0,
                     no_email_count: 0,
                     error_count: 0,
                     total_updated: 0,
                     total_no_email: 0,
-                    total_error: 0
+                    total_error: 0,
+                    error: null,
+                    last_id: null
                 };
-                     // Initialize counts
 
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_and_clean_organizations");
+                    // Start the process in the backend
+                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/start_process_and_clean");
+                    this.startPolling();
+                } catch (error) {
+                    this.isUpdating = false;
+                    this.status = "Kunne ikke starte prosessen.";
+                    this.processingData.error = error.message;
+                }
+            },
+            startPolling() {
+                if (this.pollingInterval) clearInterval(this.pollingInterval);
+                this.pollingInterval = setInterval(this.fetchProcessStatus, 5000); // Poll every 5 seconds
+            },
+            async fetchProcessStatus() {
+                try {
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_status");
+                    const data = response.data;
 
-                    // Process the response containing all batch results
-                    if (response.data && response.data.batches) {
-                        response.data.batches.forEach((batchResult) => {
-                            if (batchResult.error) {
-                                console.error("Error in batch:", batchResult.error);
-                                this.processingData.error_count += 1;
-                            } else {
-                                this.processingData.updated_count += batchResult.updated_count;
-                                this.processingData.no_email_count += batchResult.no_email_count;
-                                this.processingData.error_count += batchResult.error_count;
-                                // Update running totals
-                                this.processingData.total_updated = batchResult.total_updated;
-                                this.processingData.total_no_email = batchResult.total_no_email;
-                                this.processingData.total_error = batchResult.total_error;
-                            }
-                        });
-                        this.status = "Processing complete!";
-                    } else {
-                        this.status = "No data returned from the server.";
+                    // Use the latest batch for batch stats
+                    let latestBatch = (data.batches && data.batches.length > 0)
+                        ? data.batches[data.batches.length - 1]
+                        : {
+                            updated_count: 0,
+                            no_email_count: 0,
+                            error_count: 0,
+                            total_updated: 0,
+                            total_no_email: 0,
+                            total_error: 0
+                        };
+
+                    this.processingData = {
+                        ...latestBatch,
+                        error: data.error,
+                        last_id: data.last_id
+                    };
+
+                    this.status = data.error
+                        ? "Feil: " + data.error
+                        : data.running
+                            ? "Processing..."
+                            : "Processing complete!";
+
+                    // Stop polling if finished or error
+                    if (!data.running || data.error) {
+                        this.isUpdating = false;
+                        clearInterval(this.pollingInterval);
                     }
                 } catch (error) {
-                    console.error("Error during processing:", error);
-                    let lastId = error.response && error.response.data && error.response.data.last_id
-                        ? error.response.data.last_id
-                        : null;
-                    this.processingData = {
-                        status: "An error occurred during processing.",
-                        error: error.message,
-                        last_id: lastId
-                    };
-                } finally {
-                    this.isUpdating = false; // Re-enable the button
+                    this.isUpdating = false;
+                    this.status = "Feil under polling.";
+                    this.processingData.error = error.message;
+                    clearInterval(this.pollingInterval);
                 }
             },
             async manualSearch() {
@@ -170,16 +188,13 @@
                 }
             },
             async fetchSearchResults() {
-                 try {
-                     // Fetch results from the backend
-                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
-         
-                     // Update searchResults with the fetched data
-                     this.searchResults = Array.isArray(response.data) ? response.data : [];
-                 } catch (error) {
-                     console.error("Error fetching search results:", error);
-                     this.searchResults = []; // Set to an empty array on error
-                 }
+                try {
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+                    this.searchResults = Array.isArray(response.data) ? response.data : [];
+                } catch (error) {
+                    console.error("Error fetching search results:", error);
+                    this.searchResults = [];
+                }
             },
             removeResult(orgNr) {
                 this.searchResults = this.searchResults.filter(r => r.org_nr !== orgNr);
@@ -191,10 +206,10 @@
                 this.showPopup2 = true;
             },
             closePopup1() {
-                this.showPopup1 = false; // Skjul popup når den lukkes
+                this.showPopup1 = false;
             },
             closePopup2() {
-                this.showPopup2 = false; // Skjul popup når den lukkes
+                this.showPopup2 = false;
             },
             openPopup3() {
                 this.showPopup3 = true;
@@ -209,6 +224,9 @@
                 this.showPopup4 = false;
             },
         },
+        beforeDestroy() {
+            if (this.pollingInterval) clearInterval(this.pollingInterval);
+        }
     };
 </script>
 <style scoped>
@@ -229,29 +247,28 @@
             transform: rotate(360deg);
         }
     }
-    /* Ensure white font for the processingData section */
+
     div[processingData] {
-        color: #ffffff; /* White font */
-    }
-    div[processingData] h3,
-    div[processingData] ul,
-    div[processingData] p {
-        color: #ffffff; /* Ensure all child elements have white font */
+        color: #ffffff;
     }
 
+        div[processingData] h3,
+        div[processingData] ul,
+        div[processingData] p {
+            color: #ffffff;
+        }
 
-    /* Generell styling */
     body {
         font-family: Arial, sans-serif;
-        background-color: #121212; /* Mørk bakgrunn */
-        color: #e0e0e0; /* Lys tekst for kontrast */
+        background-color: #121212;
+        color: #e0e0e0;
         margin: 0;
         padding: 0;
     }
 
     h1, h2 {
         text-align: center;
-        color: #ffffff; /* Hvit tekst for overskrifter */
+        color: #ffffff;
         margin-bottom: 20px;
     }
 
@@ -262,17 +279,16 @@
     p {
         color: #e0e0e0
     }
-    /* Container for innhold */
+
     div {
         max-width: 800px;
         margin: 20px auto;
         padding: 20px;
-        background: #1e1e1e; /* Mørk grå for kort/innhold */
+        background: #1e1e1e;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* Mørk skygge */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
     }
 
-    /* Input-felt */
     input[type="text"] {
         display: block;
         width: 100%;
@@ -280,20 +296,19 @@
         margin: 10px auto;
         padding: 10px;
         font-size: 16px;
-        border: 1px solid #333; /* Mørk kant */
-        background-color: #2c2c2c; /* Mørk bakgrunn for input */
-        color: #ffffff; /* Hvit tekst */
+        border: 1px solid #333;
+        background-color: #2c2c2c;
+        color: #ffffff;
         border-radius: 4px;
         outline: none;
         box-sizing: border-box;
     }
 
         input[type="text"]:focus {
-            border-color: #555; /* Lysere kant ved fokus */
+            border-color: #555;
             box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
         }
 
-    /* Knapp */
     button {
         display: block;
         width: 100%;
@@ -301,56 +316,54 @@
         margin: 10px auto;
         padding: 10px;
         font-size: 16px;
-        background-color: #2c2c2c; /* Mørk bakgrunn for knapp */
-        color: #e0e0e0; /* Lys tekst */
-        border: 1px solid #444; /* Mørk kant */
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+        border: 1px solid #444;
         border-radius: 4px;
         cursor: pointer;
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
         button:hover {
-            background-color: #444; /* Lysere grå ved hover */
-            color: #ffffff; /* Hvitere tekst ved hover */
+            background-color: #444;
+            color: #ffffff;
         }
 
         button:disabled {
-            background-color: #333; /* Gråaktig for deaktivert */
-            color: #777; /* Dempet tekstfarge */
+            background-color: #333;
+            color: #777;
             cursor: not-allowed;
         }
 
     .enabled-button {
-        background-color: #2c2c2c; /* Dark background for enabled */
-        color: #e0e0e0; /* Light text */
-        border: 1px solid #444; /* Dark border */
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+        border: 1px solid #444;
         cursor: pointer;
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
         .enabled-button:hover {
-            background-color: #444; /* Lighter gray on hover */
-            color: #ffffff; /* Whiter text on hover */
+            background-color: #444;
+            color: #ffffff;
         }
 
-        .disabled-button {
-            background-color: #333; /* Gray background for disabled */
-            color: #777; /* Muted text color */
-            border: 1px solid #444; /* Dark border */
-            cursor: not-allowed; /* Show not-allowed cursor */
-        }
+    .disabled-button {
+        background-color: #333;
+        color: #777;
+        border: 1px solid #444;
+        cursor: not-allowed;
+    }
 
-    /* Statusvisning */
     pre {
-        background-color: #1e1e1e; /* Mørk bakgrunn */
-        color: #e0e0e0; /* Lys tekst */
+        background-color: #1e1e1e;
+        color: #e0e0e0;
         padding: 10px;
-        border: 1px solid #333; /* Mørk kant */
+        border: 1px solid #333;
         border-radius: 4px;
         overflow-x: auto;
     }
 
-    /* Responsivt design */
     @media (max-width: 600px) {
         div {
             padding: 10px;
@@ -362,5 +375,3 @@
         }
     }
 </style>
-
-

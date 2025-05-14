@@ -63,23 +63,10 @@
                     // Start prosessen
                     await this.startProcess(); // Starter prosessen
                     // Hent selskaper etter at prosessen er startet
-                    await this.fetchCompanies();
+                   
                     
                 } catch (error) {
                     console.error("Feil under knappetrykk:", error);
-                }
-            },
-            async fetchCompanies() {
-                try {
-
-                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
-
-                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/search_emails");
-                    this.companies = Array.isArray(response.data) ? response.data : [];
-                    this.processRunning = true;
-
-                } catch (error) {
-                    console.error("Feil under henting av selskaper:", error);
                 }
             },
             async fetchStoredCompanies() {
@@ -126,14 +113,16 @@
                     console.error("Feil under forkasting og henting av neste:", error);
                 }
             },
-
             async startProcess() {
                 if (!this.processRunning) {
                     try {
+                        // Initialize/clear the results table before starting the process
+                        await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
                         const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/KseApi/start_process_kse");
                         alert(response.data.status);
-                        this.processRunning = true;  // Sett prosessen til å være aktiv
-                        this.currentSearchQuery = "Prossessen Kjører.." // Eksempelpå søkeprogresjon
+                        this.processRunning = true;
+                        this.currentSearchQuery = "Prosessen kjører...";
+                        this.startPolling(); // If you use polling for status
                     } catch (error) {
                         console.error("Feil under start:", error);
                     }
@@ -159,7 +148,6 @@
                     console.error("Feil under stopp:", error);
                 }
             },
-
             // Close the popup and notify the parent component
             closePopup() {
                 this.$emit("close");
@@ -167,8 +155,6 @@
         },
     };
 </script>
-
-
 <style scoped>
     /* Popup styling */
     .popup-overlay {

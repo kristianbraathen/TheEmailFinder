@@ -158,6 +158,14 @@ def search_emails_and_display(batch_size=5):
                             "company_name": company_name,
                             "emails": email_list
                         })
+                        # Insert the results into the database
+                        for email in email_list:
+                            insert_query = """
+                            INSERT INTO [dbo].[email_results] ([Org_nr], [company_name], [email])
+                            VALUES (?, ?, ?)
+                            """
+                            cursor.execute(insert_query, (org_nr, company_name, email))
+                        conn.commit()
 
                 # Update the last processed `id` for the next batch
                 last_id = rows[-1][0]  # The `id` of the last row in the current batch

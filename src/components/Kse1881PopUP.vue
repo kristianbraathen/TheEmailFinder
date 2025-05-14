@@ -56,23 +56,10 @@
                     // Start prosessen
                     await this.startProcess(); // Starter prosessen
                     // Hent selskaper etter at prosessen er startet
-                    await this.fetchCompanies();
+                    
 
                 } catch (error) {
                     console.error("Feil under knappetrykk:", error);
-                }
-            },
-
-            async fetchCompanies() {
-                try {
-                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
-
-                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/search_emails");
-                    this.companies = Array.isArray(response.data) ? response.data : [];
-                    this.processRunning = true;
-                    
-                } catch (error) {
-                    console.error("Feil under henting av selskaper:", error);
                 }
             },
             async fetchStoredCompanies() {
@@ -119,7 +106,6 @@
                     console.error("Feil under forkasting og henting av neste:", error);
                 }
             },
-
             // Select an email and send it to the backend
             async selectEmail(orgNr, email) {
                 try {
@@ -132,22 +118,22 @@
                     console.error("Feil under oppdatering:", error);
                 }
             },
-
             // Move to the next company
             nextCompany() {
                 if (this.currentCompanyIndex < this.companies.length - 1) {
                     this.currentCompanyIndex++;
                 }
             },
-
             async startProcess() {
                 if (!this.processRunning) {
                     try {
-                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/start_process_1881");
+                        // Initialize/clear the results table before starting the process
+                        await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
+                        const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/start_process_google");
                         alert(response.data.status);
-                        this.processRunning = true;  // Sett prosessen til å være aktiv
-                        this.currentSearchQuery = "Prosessen kjører..."; // Eksempel på søkeprogresjon
-                       
+                        this.processRunning = true;
+                        this.currentSearchQuery = "Prosessen kjører...";
+                        this.startPolling(); // If you use polling for status
                     } catch (error) {
                         console.error("Feil under start:", error);
                     }
@@ -211,9 +197,6 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         font-family: Arial, sans-serif;
     }
-
-
-
 
     .emailresults {
         font-family: Arial, sans-serif;

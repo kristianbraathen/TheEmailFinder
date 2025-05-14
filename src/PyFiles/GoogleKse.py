@@ -15,7 +15,6 @@ import os
 import tempfile
 from sqlalchemy.sql import text
 import threading
-    
 
 # Flask-app
 api6_blueprint = Blueprint('api6', __name__)
@@ -23,36 +22,41 @@ CORS(api6_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeas
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
+# Process status for polling
+process_status = {
+    "running": False,
+    "last_id": 0,
+    "processed": 0,
+    "error": None,
+    "results": []
+}
+process_status_lock = Lock()
+
 # Install ChromeDriver automatically if not set
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
-
 driver_path = chromedriver_autoinstaller.install()
 
 # Konfigurasjon for Selenium
 chrome_service = Service(executable_path=driver_path)
 chrome_options = Options()
-
-# Set Chrome options
 chrome_options.add_argument("--headless=new")
-chrome_options.add_argument("--disable-gpu")  # Disable GPU (important in headless environments)
-chrome_options.add_argument("--no-sandbox")  # Avoid sandboxing issues in containers
-chrome_options.add_argument("--disable-extensions")  # Disable extensions
-chrome_options.add_argument("--disable-dev-shm-usage")  # Address shared memory issues in Docker
-chrome_options.add_argument("--disable-software-rasterizer")  # Disable software rendering
-chrome_options.add_argument("--lang=en-NO")  # Norwegian language
-chrome_options.add_argument("--enable-unsafe-swiftshader")  # SwiftShader for software rendering fallback
-chrome_options.add_argument("--disable-user-data-dir")  # Ensure no specific user profile is loaded
-chrome_options.add_argument("--disable-dev-tools")  # Disable developer tools
-chrome_options.add_argument("--remote-debugging-port=0")  # Prevent remote debugging
-chrome_options.add_argument("--log-level=3")  # Suppress logs (INFO, WARNING, and ERROR logs)
-chrome_options.add_argument("--disable-default-apps")  # Disable default apps
-chrome_options.add_argument("--disable-session-crashed-bubble")  # Disable "restore session" dialog
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-extensions")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-software-rasterizer")
+chrome_options.add_argument("--lang=en-NO")
+chrome_options.add_argument("--enable-unsafe-swiftshader")
+chrome_options.add_argument("--disable-user-data-dir")
+chrome_options.add_argument("--disable-dev-tools")
+chrome_options.add_argument("--remote-debugging-port=0")
+chrome_options.add_argument("--log-level=3")
+chrome_options.add_argument("--disable-default-apps")
+chrome_options.add_argument("--disable-session-crashed-bubble")
 
-# Google Custom Search API-konfigurasjon
 API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
 CSE_ID = "879ff228f5bff4ed9"
 
-# Funksjon for å gjøre et søk via Google Custom Search API
 def google_custom_search(query):
     url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=3"
     response = requests.get(url)
@@ -64,13 +68,11 @@ def google_custom_search(query):
         print(f"Feil ved Google API: {response.status_code} - {response.text}")
         return []
 
-# Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
-        # Initialize driver inside the function to avoid global instantiation
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
         driver.get(url)
-        time.sleep(5)  # Bytt gjerne med WebDriverWait for bedre ytelse
+        time.sleep(5)
         page_source = driver.page_source
         emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
         driver.quit()
@@ -79,20 +81,27 @@ def extract_email_selenium(url):
         print(f"Feil ved uthenting av e-post fra {url}: {e}")
         return []
 
-# Funksjon for å søke etter firmaer fra databasen og vise e-poster
 def search_emails_and_display(batch_size=5):
     """
     Processes emails in small batches using the `id` column for ordering.
+    Updates process_status for polling.
     """
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
-            last_id = 0  # Start from the first row
+            last_id = 0
+            processed = 0
             results = []
             global process_running
 
+            with process_status_lock:
+                process_status["running"] = True
+                process_status["last_id"] = 0
+                process_status["processed"] = 0
+                process_status["error"] = None
+                process_status["results"] = []
+
             while True:
-                # Fetch a small batch of rows based on the `id` column
                 query = f"""
                     SELECT "id", "Org_nr", "Firmanavn"
                     FROM imported_table
@@ -105,58 +114,78 @@ def search_emails_and_display(batch_size=5):
 
                 if not rows:
                     print("Ingen flere rader å behandle.")
-                    break  # Exit the loop if no more rows are found
+                    break
 
                 print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
 
                 for row in rows:
-                    if not process_running:  # Check if the process should stop
+                    if not process_running:
                         print("Prosessen er stoppet.")
                         break
 
                     row_id, org_nr, company_name = row
-
-                    # Google Custom Search with company name and Norway
                     search_query = f'"{company_name}" "Norge"'
                     print(f"Søker med query: {search_query}")
 
                     search_results = google_custom_search(search_query)
                     all_emails = []
                     for url in search_results:
-                        if not process_running:  # Check if the process should stop
+                        if not process_running:
                             print("Prosessen er stoppet.")
                             break
                         emails = extract_email_selenium(url)
                         all_emails.extend(emails)
 
-                    # Remove duplicate emails
                     unique_emails = set(all_emails)
                     email_list = list(unique_emails)
 
-                    # Save the results
                     if email_list:
-                        results.append({
+                        result_entry = {
                             "id": row_id,
                             "org_nr": org_nr,
                             "company_name": company_name,
                             "emails": email_list
-                        })
+                        }
+                        results.append(result_entry)
+                        # Insert the results into the database
+                        for email in email_list:
+                            insert_query = """
+                            INSERT INTO [dbo].[email_results] ([Org_nr], [company_name], [email])
+                            VALUES (?, ?, ?)
+                            """
+                            cursor.execute(insert_query, (org_nr, company_name, email))
+                        conn.commit()
 
-                # Update the last processed `id` for the next batch
-                last_id = rows[-1][0]  # The `id` of the last row in the current batch
+                    processed += 1
+                    last_id = row_id
+
+                    # Update process_status after each row
+                    with process_status_lock:
+                        process_status["last_id"] = last_id
+                        process_status["processed"] = processed
+                        process_status["results"] = results.copy()
+
+                if not process_running:
+                    break
+
+            with process_status_lock:
+                process_status["running"] = False
 
             return results
 
     except Exception as e:
         print(f"Feil: {e}")
+        with process_status_lock:
+            process_status["error"] = str(e)
+            process_status["running"] = False
         return []
-# Flask-endepunkt for å søke etter e-poster
+
 @api6_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():
     global process_running
 
     with process_lock:
-        print(f"Prosesstart - process_running: {process_running}")  # Logg status
+        print(f"Prosesstart - process_running: {process_running}")
         if process_running:
             return jsonify({"error": "Prosessen er stoppet, kan ikke hente e-poster."}), 400
 
@@ -166,18 +195,21 @@ def search_emails_endpoint():
         results = search_emails_and_display()
         return jsonify(results), 200
     except Exception as e:
-        print(f"Feil under behandling: {str(e)}")  # Logg feilmeldingen
+        print(f"Feil under behandling: {str(e)}")
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
     finally:
         with process_lock:
             process_running = False
-            print(f"Prosesstopp - process_running: {process_running}")  # Logg status etter prosessen
+            print(f"Prosesstopp - process_running: {process_running}")
 
+@api6_blueprint.route('/process_status', methods=['GET'])
+def process_status_endpoint():
+    with process_status_lock:
+        return jsonify(process_status)
 
 @api6_blueprint.route("/update_email", methods=["POST"])
 def update_email():
     try:
-        # Parse the request JSON
         data = request.get_json()
         org_nr = data.get("org_nr")
         email = data.get("email")
@@ -185,7 +217,6 @@ def update_email():
         if not org_nr or not email:
             return jsonify({"error": "Org.nr and email are required."}), 400
 
-        # Perform the update in the database
         query = text(
             'UPDATE imported_table SET "E_post_1" = :Email WHERE "Org_nr" = :Org_nr'
         )
@@ -234,11 +265,15 @@ def start_process_google():
             try:
                 search_emails_and_display()
             except Exception as e:
-                print(f"Feil ved prosessstart: {str(e)}")  # Logg feil for feilsøking
+                print(f"Feil ved prosessstart: {str(e)}")
+                with process_status_lock:
+                    process_status["error"] = str(e)
             finally:
                 global process_running
                 with process_lock:
                     process_running = False
+                with process_status_lock:
+                    process_status["running"] = False
                 print("Prosessen er ferdig, process_running satt tilbake til False.")
 
         threading.Thread(target=background_search, daemon=True).start()
@@ -250,20 +285,17 @@ def stop_process_google():
     global process_running
     with process_lock:
         if not process_running:
-            # Always return 200, but with a message
             return jsonify({"status": "Process was not running (already stopped)."}), 200
 
         try:
             process_running = False
-            print("Prosessen er stoppet.")  # Logg når prosessen stoppes
-            # Stopp prosessen her (hvis det er noen bakgrunnsprosess eller langvarig jobb som kan stoppes)
+            print("Prosessen er stoppet.")
+            with process_status_lock:
+                process_status["running"] = False
+                process_status["error"] = "Stopped by user"
             return jsonify({"status": "Process stopped successfully."}), 200
 
         except Exception as e:
-            # Hvis det skjer en feil, sett process_running til True igjen for å indikere at prosessen fortsatt er "kjørende"
             process_running = True
-            print(f"Feil ved stopp prosess: {str(e)}")  # Logg feil for feilsøking
+            print(f"Feil ved stopp prosess: {str(e)}")
             return jsonify({"status": f"Error stopping process: {str(e)}"}), 500
-
-
-

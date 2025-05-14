@@ -23,7 +23,7 @@ process_lock = Lock()
 process_running = False  # Global flag to track the process state
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 # Install ChromeDriver automatically if not set
-chromedriver_autoinstaller.install()
+
 
 # Konfigurasjon for Selenium
 chrome_options = Options()
@@ -67,13 +67,18 @@ def google_custom_search(query):
 # Funksjon for å trekke ut e-poster fra nettside
 def extract_email_selenium(url):
     try:
+        import chromedriver_autoinstaller
+        chromedriver_autoinstaller.install()
         # Initialize driver inside the function to avoid global instantiation
         driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
         driver.get(url)
 
         # Wait for the page to load (up to 10 seconds)
+        # If you use WebDriverWait, make sure to import it and EC
+        # from selenium.webdriver.support.ui import WebDriverWait
+        # from selenium.webdriver.common.by import By
+        # from selenium.webdriver.support import expected_conditions as EC
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-
         page_source = driver.page_source
         emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
         driver.quit()
@@ -81,6 +86,7 @@ def extract_email_selenium(url):
     except Exception as e:
         print(f"Feil ved uthenting av e-post fra {url}: {e}")
         return []
+
 # Funksjon for å søke etter firmaer fra databasen og vise e-poster
 def search_emails_and_display(batch_size=5):
     """
@@ -143,6 +149,14 @@ def search_emails_and_display(batch_size=5):
                             "company_name": company_name,
                             "emails": email_list
                         })
+                        # Insert the results into the database
+                        for email in email_list:
+                            insert_query = """
+                            INSERT INTO [dbo].[email_results] ([Org_nr], [company_name], [email])
+                            VALUES (?, ?, ?)
+                            """
+                            cursor.execute(insert_query, (org_nr, company_name, email))
+                        conn.commit()
 
                 # Update the last processed `id` for the next batch
                 last_id = rows[-1][0]  # The `id` of the last row in the current batch

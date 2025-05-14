@@ -4,6 +4,8 @@ import psycopg2
 from flask import Flask, jsonify, Blueprint
 from .Db import db
 import os
+from threading import Lock
+import threading
 
 api2_blueprint = Blueprint('api2', __name__)
 
@@ -12,6 +14,16 @@ connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
 # Track the latest processed ID globally for error reporting
 latest_last_id = 0
+
+# Process status for polling
+process_status = {
+    "running": False,
+    "last_id": 0,
+    "processed": 0,
+    "error": None,
+    "batches": []
+}
+process_status_lock = Lock()
 
 def get_last_processed_id():
     """
@@ -28,7 +40,6 @@ def get_last_processed_id():
     except Exception as e:
         print(f"Feil ved henting av siste id: {e}")
         return 0
-
 
 def process_organization_with_single_call(org_nr):
     """
@@ -82,7 +93,6 @@ def process_organization_with_single_call(org_nr):
         print(f"Feil under prosessering av {org_nr}: {e}")
         return 'error'
 
-
 def extract_company_status(data):
     """
     Ekstraherer konkurs- og dato-informasjon fra API-data.
@@ -103,24 +113,29 @@ def extract_company_status(data):
     is_konkurs = bool(konkurs or under_avvikling or slettedato)
     return is_konkurs, under_avvikling, slettedato, oppstartsdato
 
-
 def process_all_in_batches(batch_size=50):
     """
     Processes all organizations in batches, restarting the function after each batch.
-    Prints running totals for progress tracking.
+    Updates process_status for polling.
     """
     global latest_last_id
     updated_count = no_email_count = error_count = 0
-    total_updated = total_no_email = total_error = 0  # Running totals
+    total_updated = total_no_email = total_error = 0
     last_id = get_last_processed_id()
-    latest_last_id = last_id  # Initialize with the starting point
-    print(f"Siste behandlet ID: {last_id}")
+    latest_last_id = last_id
+    processed = 0
+
+    with process_status_lock:
+        process_status["running"] = True
+        process_status["last_id"] = last_id
+        process_status["processed"] = 0
+        process_status["error"] = None
+        process_status["batches"] = []
 
     try:
         while True:
             with psycopg2.connect(connection_string) as conn:
                 cursor = conn.cursor()
-                # Fetch the next batch of rows
                 cursor.execute(
                     'SELECT "Org_nr", "id" FROM imported_table WHERE "id" > %s ORDER BY "id" ASC LIMIT %s',
                     (last_id, batch_size)
@@ -142,21 +157,15 @@ def process_all_in_batches(batch_size=50):
                 else:
                     error_count += 1
 
-                # Update the last processed ID
                 last_id = _id
-                latest_last_id = last_id  # Update global progress
+                latest_last_id = last_id
+                processed += 1
 
-            # Update running totals
             total_updated += updated_count
             total_no_email += no_email_count
             total_error += error_count
 
-            # Log batch and running totals
-            print(f"✅ Ferdig batch. Oppdatert: {updated_count}, Ingen e-post: {no_email_count}, Feil: {error_count}")
-            print(f"🔢 Totalt så langt: Oppdatert: {total_updated}, Ingen e-post: {total_no_email}, Feil: {total_error}")
-
-            # Return intermediate results for the current batch
-            yield {
+            batch_result = {
                 "updated_count": updated_count,
                 "no_email_count": no_email_count,
                 "error_count": error_count,
@@ -166,31 +175,66 @@ def process_all_in_batches(batch_size=50):
                 "last_id": last_id,
             }
 
-            # Reset counts for the next batch
+            with process_status_lock:
+                process_status["last_id"] = last_id
+                process_status["processed"] = processed
+                process_status["batches"].append(batch_result)
+
+            yield batch_result
+
             updated_count = no_email_count = error_count = 0
 
     except Exception as e:
         print(f"Feil under batch-prosessering: {e}")
+        with process_status_lock:
+            process_status["error"] = str(e)
+            process_status["running"] = False
         yield {"error": str(e), "last_id": latest_last_id}
-
     finally:
+        with process_status_lock:
+            process_status["running"] = False
         print("🔚 Ferdig med alle batcher.")
 
+@api2_blueprint.route('/start_process_and_clean', methods=['POST'])
+def start_process_and_clean():
+    with process_status_lock:
+        if process_status["running"]:
+            return jsonify({"status": "Already running"}), 400
 
+        process_status["running"] = True
+        process_status["error"] = None
+        process_status["batches"] = []
+
+    def background_job():
+        try:
+            for _ in process_all_in_batches():
+                pass
+        except Exception as e:
+            with process_status_lock:
+                process_status["error"] = str(e)
+        finally:
+            with process_status_lock:
+                process_status["running"] = False
+
+    threading.Thread(target=background_job, daemon=True).start()
+    return jsonify({"status": "Processing started"}), 202
+
+@api2_blueprint.route('/process_status', methods=['GET'])
+def process_status_endpoint():
+    with process_status_lock:
+        return jsonify(process_status)
+
+# (Optional) Keep the old endpoint for compatibility, but recommend using the new async flow
 @api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
 def process_and_clean_endpoint():
-    from .BrregUpdate import latest_last_id  # Ensure we get the global variable
+    from .BrregUpdate import latest_last_id
     try:
         results = []
         for batch_result in process_all_in_batches():
             results.append(batch_result)
-            # Optionally, you can log or store intermediate results here
-
         return jsonify({
             'status': 'Behandling fullført.',
             'batches': results
         }), 200
     except Exception as e:
-        # Return last_id if available
         return jsonify({'error': f'Feil oppstod: {e}', 'last_id': latest_last_id}), 500
-
