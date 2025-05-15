@@ -27,9 +27,10 @@ def get_last_processed_id():
         print(f"Feil ved henting av siste id: {e}")
         return 0
 
-def process_organization_with_single_call(org_nr):
+def process_organization_with_single_call(org_nr, cursor, conn):
     """
     Gjør ett API-kall til Brreg, sjekker status og oppdaterer databasen.
+    Bruker eksisterende cursor og connection.
     """
     try:
         # Hent data fra Brreg API
@@ -53,25 +54,21 @@ def process_organization_with_single_call(org_nr):
             status = 'aktiv selskap'
 
         # Oppdater status
-        with psycopg2.connect(connection_string) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                'UPDATE imported_table SET "Status" = %s WHERE "Org_nr" = %s',
-                (status, org_nr)
-            )
-            conn.commit()
+        cursor.execute(
+            'UPDATE imported_table SET "Status" = %s WHERE "Org_nr" = %s',
+            (status, org_nr)
+        )
+        conn.commit()
 
         # Hent e-post om status kun er aktiv
         if status == 'aktiv selskap':
             epost = data.get('epostadresse')
             if epost:
-                with psycopg2.connect(connection_string) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        'UPDATE imported_table SET "E_post_1" = %s WHERE "Org_nr" = %s',
-                        (epost, org_nr)
-                    )
-                    conn.commit()
+                cursor.execute(
+                    'UPDATE imported_table SET "E_post_1" = %s WHERE "Org_nr" = %s',
+                    (epost, org_nr)
+                )
+                conn.commit()
                 return 'updated'
         return 'no_email'
 
@@ -101,7 +98,7 @@ def extract_company_status(data):
 
 def process_all_in_batches(batch_size=50):
     """
-    Processes all organizations in batches.
+    Processes all organizations in batches using a single DB connection per batch.
     """
     last_id = get_last_processed_id()
     try:
@@ -114,15 +111,18 @@ def process_all_in_batches(batch_size=50):
                 )
                 rows = cursor.fetchall()
 
-            if not rows:
-                print("Ingen flere organisasjoner å behandle.")
-                break
+                if not rows:
+                    print("Ingen flere organisasjoner å behandle.")
+                    break
 
-            print(f"🟡 Starter batch med {len(rows)} organisasjoner.")
+                print(f"🟡 Starter batch med {len(rows)} organisasjoner.")
 
-            for org_nr, _id in rows:
-                process_organization_with_single_call(org_nr)
-                last_id = _id
+                for org_nr, _id in rows:
+                    try:
+                        process_organization_with_single_call(org_nr, cursor, conn)
+                    except Exception as e:
+                        print(f"Feil under prosessering av {org_nr}: {e}")
+                    last_id = _id
 
     except Exception as e:
         print(f"Feil under batch-prosessering: {e}")
@@ -148,11 +148,12 @@ def progress_summary():
             # Count all active companies with a non-null email
             cursor.execute('SELECT COUNT(*) FROM imported_table WHERE "Status" = %s AND "E_post_1" IS NOT NULL', ('aktiv selskap',))
             with_email = cursor.fetchone()[0]
+        last_id = get_last_processed_id()
         return jsonify({
             "total_num": total_num,
             "aktiv_selskap": total_aktiv,
-            "aktiv_selskap_med_epost": with_email
+            "aktiv_selskap_med_epost": with_email,
+            "last_id": last_id
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
