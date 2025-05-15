@@ -38,22 +38,13 @@
             <button @click="manualSearch">Søk</button>
         </div>
         <!-- Resultatvisning -->
-        <div v-if="processingData">
-            <h3>Status: {{ status }}</h3>
+        <div v-if="progressSummary">
+            <h3>Status fra Brønnøysund</h3>
             <ul>
-                <li>✅ Oppdatert (batch): {{ processingData.updated_count }}</li>
-                <li>📭 Ingen e-post (batch): {{ processingData.no_email_count }}</li>
-                <li>❌ Feil (batch): {{ processingData.error_count }}</li>
+                <li>🔢 Totalt selskaper: {{ progressSummary.total_num }}</li>
+                <li>🔢 Aktive selskaper: {{ progressSummary.aktiv_selskap }}</li>
+                <li>📧 Aktive selskaper med e-post: {{ progressSummary.aktiv_selskap_med_epost }}</li>
             </ul>
-            <ul>
-                <li>🔢 Totalt oppdatert: {{ processingData.total_updated }}</li>
-                <li>🔢 Totalt ingen e-post: {{ processingData.total_no_email }}</li>
-                <li>🔢 Totalt feil: {{ processingData.total_error }}</li>
-            </ul>
-            <p v-if="processingData.error">
-                ❗Feilmelding: {{ processingData.error }}
-                <span v-if="processingData.last_id"> (Siste behandlede ID: {{ processingData.last_id }})</span>
-            </p>
         </div>
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
@@ -88,7 +79,7 @@
                 showPopup4: false,
                 companies: [],
                 status: "",
-                pollingInterval: null
+                progressSummary: null,
             };
         },
         components: {
@@ -102,73 +93,20 @@
         methods: {
             async processAndCleanOrganizations() {
                 this.isUpdating = true;
-                this.status = "Processing...";
-                this.processingData = {
-                    updated_count: 0,
-                    no_email_count: 0,
-                    error_count: 0,
-                    total_updated: 0,
-                    total_no_email: 0,
-                    total_error: 0,
-                    error: null,
-                    last_id: null
-                };
-
                 try {
-                    // Start the process in the backend
                     await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/start_process_and_clean");
-                    this.startPolling();
+                    await this.fetchBrregProgress();
+                    // Optionally show a toast or message: "Prosess startet"
                 } catch (error) {
+                    // Optionally show an error message
+                } finally {
                     this.isUpdating = false;
-                    this.status = "Kunne ikke starte prosessen.";
-                    this.processingData.error = error.message;
                 }
             },
-            startPolling() {
-                if (this.pollingInterval) clearInterval(this.pollingInterval);
-                this.pollingInterval = setInterval(this.fetchProcessStatus, 5000); // Poll every 5 seconds
-            },
-            async fetchProcessStatus() {
-                try {
-                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/process_status");
-                    const data = response.data;
-
-                    // Use the latest batch for batch stats
-                    let latestBatch = (data.batches && data.batches.length > 0)
-                        ? data.batches[data.batches.length - 1]
-                        : {
-                            updated_count: 0,
-                            no_email_count: 0,
-                            error_count: 0,
-                            total_updated: 0,
-                            total_no_email: 0,
-                            total_error: 0
-                        };
-
-                    this.processingData = {
-                        ...latestBatch,
-                        error: data.error,
-                        last_id: data.last_id
-                    };
-
-                    this.status = data.error
-                        ? "Feil: " + data.error
-                        : data.running
-                            ? "Processing..."
-                            : "Processing complete!";
-
-                    // Stop polling if finished or error
-                    if (!data.running || data.error) {
-                        this.isUpdating = false;
-                        clearInterval(this.pollingInterval);
-                    }
-                } catch (error) {
-                    this.isUpdating = false;
-                    this.status = "Feil under polling.";
-                    this.processingData.error = error.message;
-                    clearInterval(this.pollingInterval);
-                }
-            },
+            async fetchBrregProgress() {
+                const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/progress_summary");
+                this.progressSummary = response.data;
+            },            
             async manualSearch() {
                 if (!this.search_by_company_name) {
                     this.status = "Vennligst skriv inn en bedrift.";
@@ -224,9 +162,6 @@
                 this.showPopup4 = false;
             },
         },
-        beforeDestroy() {
-            if (this.pollingInterval) clearInterval(this.pollingInterval);
-        }
     };
 </script>
 <style scoped>

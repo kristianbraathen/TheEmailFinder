@@ -22,16 +22,6 @@ CORS(api6_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeas
 process_lock = Lock()
 process_running = False  # Global flag to track the process state
 
-# Process status for polling
-process_status = {
-    "running": False,
-    "last_id": 0,
-    "processed": 0,
-    "error": None,
-    "results": []
-}
-process_status_lock = Lock()
-
 # Install ChromeDriver automatically if not set
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 driver_path = chromedriver_autoinstaller.install()
@@ -84,22 +74,12 @@ def extract_email_selenium(url):
 def search_emails_and_display(batch_size=5):
     """
     Processes emails in small batches using the `id` column for ordering.
-    Updates process_status for polling.
     """
     try:
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             last_id = 0
-            processed = 0
-            results = []
             global process_running
-
-            with process_status_lock:
-                process_status["running"] = True
-                process_status["last_id"] = 0
-                process_status["processed"] = 0
-                process_status["error"] = None
-                process_status["results"] = []
 
             while True:
                 query = f"""
@@ -140,14 +120,6 @@ def search_emails_and_display(batch_size=5):
                     email_list = list(unique_emails)
 
                     if email_list:
-                        result_entry = {
-                            "id": row_id,
-                            "org_nr": org_nr,
-                            "company_name": company_name,
-                            "emails": email_list
-                        }
-                        results.append(result_entry)
-                        # Insert the results into the database
                         for email in email_list:
                             insert_query = """
                             INSERT INTO [dbo].[email_results] ([Org_nr], [company_name], [email])
@@ -156,29 +128,16 @@ def search_emails_and_display(batch_size=5):
                             cursor.execute(insert_query, (org_nr, company_name, email))
                         conn.commit()
 
-                    processed += 1
                     last_id = row_id
-
-                    # Update process_status after each row
-                    with process_status_lock:
-                        process_status["last_id"] = last_id
-                        process_status["processed"] = processed
-                        process_status["results"] = results.copy()
 
                 if not process_running:
                     break
 
-            with process_status_lock:
-                process_status["running"] = False
-
-            return results
+            return True
 
     except Exception as e:
         print(f"Feil: {e}")
-        with process_status_lock:
-            process_status["error"] = str(e)
-            process_status["running"] = False
-        return []
+        return False
 
 @api6_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():
@@ -192,8 +151,8 @@ def search_emails_endpoint():
         process_running = True
 
     try:
-        results = search_emails_and_display()
-        return jsonify(results), 200
+        result = search_emails_and_display()
+        return jsonify({"status": "Done" if result else "Error"}), 200
     except Exception as e:
         print(f"Feil under behandling: {str(e)}")
         return jsonify({"error": f"En feil oppstod: {str(e)}"}), 500
@@ -201,11 +160,6 @@ def search_emails_endpoint():
         with process_lock:
             process_running = False
             print(f"Prosesstopp - process_running: {process_running}")
-
-@api6_blueprint.route('/process_status', methods=['GET'])
-def process_status_endpoint():
-    with process_status_lock:
-        return jsonify(process_status)
 
 @api6_blueprint.route("/update_email", methods=["POST"])
 def update_email():
@@ -266,14 +220,10 @@ def start_process_google():
                 search_emails_and_display()
             except Exception as e:
                 print(f"Feil ved prosessstart: {str(e)}")
-                with process_status_lock:
-                    process_status["error"] = str(e)
             finally:
                 global process_running
                 with process_lock:
                     process_running = False
-                with process_status_lock:
-                    process_status["running"] = False
                 print("Prosessen er ferdig, process_running satt tilbake til False.")
 
         threading.Thread(target=background_search, daemon=True).start()
@@ -290,9 +240,6 @@ def stop_process_google():
         try:
             process_running = False
             print("Prosessen er stoppet.")
-            with process_status_lock:
-                process_status["running"] = False
-                process_status["error"] = "Stopped by user"
             return jsonify({"status": "Process stopped successfully."}), 200
 
         except Exception as e:

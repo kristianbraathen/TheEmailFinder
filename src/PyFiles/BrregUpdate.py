@@ -4,26 +4,12 @@ import psycopg2
 from flask import Flask, jsonify, Blueprint
 from .Db import db
 import os
-from threading import Lock
 import threading
 
 api2_blueprint = Blueprint('api2', __name__)
 
 # SQL Server-tilkobling
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
-
-# Track the latest processed ID globally for error reporting
-latest_last_id = 0
-
-# Process status for polling
-process_status = {
-    "running": False,
-    "last_id": 0,
-    "processed": 0,
-    "error": None,
-    "batches": []
-}
-process_status_lock = Lock()
 
 def get_last_processed_id():
     """
@@ -115,23 +101,9 @@ def extract_company_status(data):
 
 def process_all_in_batches(batch_size=50):
     """
-    Processes all organizations in batches, restarting the function after each batch.
-    Updates process_status for polling.
+    Processes all organizations in batches.
     """
-    global latest_last_id
-    updated_count = no_email_count = error_count = 0
-    total_updated = total_no_email = total_error = 0
     last_id = get_last_processed_id()
-    latest_last_id = last_id
-    processed = 0
-
-    with process_status_lock:
-        process_status["running"] = True
-        process_status["last_id"] = last_id
-        process_status["processed"] = 0
-        process_status["error"] = None
-        process_status["batches"] = []
-
     try:
         while True:
             with psycopg2.connect(connection_string) as conn:
@@ -149,92 +121,38 @@ def process_all_in_batches(batch_size=50):
             print(f"🟡 Starter batch med {len(rows)} organisasjoner.")
 
             for org_nr, _id in rows:
-                result = process_organization_with_single_call(org_nr)
-                if result == 'updated':
-                    updated_count += 1
-                elif result == 'no_email':
-                    no_email_count += 1
-                else:
-                    error_count += 1
-
+                process_organization_with_single_call(org_nr)
                 last_id = _id
-                latest_last_id = last_id
-                processed += 1
-
-            total_updated += updated_count
-            total_no_email += no_email_count
-            total_error += error_count
-
-            batch_result = {
-                "updated_count": updated_count,
-                "no_email_count": no_email_count,
-                "error_count": error_count,
-                "total_updated": total_updated,
-                "total_no_email": total_no_email,
-                "total_error": total_error,
-                "last_id": last_id,
-            }
-
-            with process_status_lock:
-                process_status["last_id"] = last_id
-                process_status["processed"] = processed
-                process_status["batches"].append(batch_result)
-
-            yield batch_result
-
-            updated_count = no_email_count = error_count = 0
 
     except Exception as e:
         print(f"Feil under batch-prosessering: {e}")
-        with process_status_lock:
-            process_status["error"] = str(e)
-            process_status["running"] = False
-        yield {"error": str(e), "last_id": latest_last_id}
-    finally:
-        with process_status_lock:
-            process_status["running"] = False
-        print("🔚 Ferdig med alle batcher.")
 
 @api2_blueprint.route('/start_process_and_clean', methods=['POST'])
 def start_process_and_clean():
-    with process_status_lock:
-        if process_status["running"]:
-            return jsonify({"status": "Already running"}), 400
-
-        process_status["running"] = True
-        process_status["error"] = None
-        process_status["batches"] = []
-
     def background_job():
-        try:
-            for _ in process_all_in_batches():
-                pass
-        except Exception as e:
-            with process_status_lock:
-                process_status["error"] = str(e)
-        finally:
-            with process_status_lock:
-                process_status["running"] = False
-
+        process_all_in_batches()
     threading.Thread(target=background_job, daemon=True).start()
     return jsonify({"status": "Processing started"}), 202
 
-@api2_blueprint.route('/process_status', methods=['GET'])
-def process_status_endpoint():
-    with process_status_lock:
-        return jsonify(process_status)
-
-# (Optional) Keep the old endpoint for compatibility, but recommend using the new async flow
-@api2_blueprint.route('/process_and_clean_organizations', methods=['POST'])
-def process_and_clean_endpoint():
-    from .BrregUpdate import latest_last_id
+@api2_blueprint.route('/progress_summary', methods=['GET'])
+def progress_summary():
     try:
-        results = []
-        for batch_result in process_all_in_batches():
-            results.append(batch_result)
+        with psycopg2.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            # Count all companies
+            cursor.execute('SELECT COUNT(*) FROM imported_table')
+            total_num = cursor.fetchone()[0]
+            # Count all active companies
+            cursor.execute('SELECT COUNT(*) FROM imported_table WHERE "Status" = %s', ('aktiv selskap',))
+            total_aktiv = cursor.fetchone()[0]
+            # Count all active companies with a non-null email
+            cursor.execute('SELECT COUNT(*) FROM imported_table WHERE "Status" = %s AND "E_post_1" IS NOT NULL', ('aktiv selskap',))
+            with_email = cursor.fetchone()[0]
         return jsonify({
-            'status': 'Behandling fullført.',
-            'batches': results
-        }), 200
+            "total_num": total_num,
+            "aktiv_selskap": total_aktiv,
+            "aktiv_selskap_med_epost": with_email
+        })
     except Exception as e:
-        return jsonify({'error': f'Feil oppstod: {e}', 'last_id': latest_last_id}), 500
+        return jsonify({"error": str(e)}), 500
+
