@@ -46,6 +46,9 @@
                 <li>📧 Aktive selskaper med e-post: {{ progressSummary.aktiv_selskap_med_epost }}</li>
             </ul>
         </div>
+        <button @click="fetchBrregProgress">
+            Oppdater status fra Brønnøysund
+        </button>
         <!-- Vis resultater hvis søket lykkes -->
         <div v-if="searchResults">
             <h2>Søkeresultater</h2>
