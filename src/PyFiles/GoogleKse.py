@@ -82,12 +82,16 @@ def search_emails_and_display(batch_size=5):
     Processes emails in small batches using the `id` column for ordering.
     """
     try:
+        global process_running
+        print(f"🔵 process_running is {process_running}")
+        print("🔵 search_emails_and_display() started.")
         with psycopg2.connect(connection_string) as conn:
             cursor = conn.cursor()
             last_id = 0
-            global process_running
+            
 
             while True:
+                print(f"🟡 Fetching batch starting from last_id: {last_id}")
                 query = f"""
                     SELECT "id", "Org_nr", "Firmanavn"
                     FROM imported_table
@@ -99,26 +103,29 @@ def search_emails_and_display(batch_size=5):
                 rows = cursor.fetchall()
 
                 if not rows:
-                    print("Ingen flere rader å behandle.")
+                    print("✅ Ingen flere rader å behandle. Exiting loop.")
                     break
 
                 print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
 
                 for row in rows:
                     if not process_running:
-                        print("Prosessen er stoppet.")
+                        print("🔴 Prosessen er stoppet av brukeren.")
                         break
 
                     row_id, org_nr, company_name = row
+                    print(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
+
                     search_query = f'"{company_name}" "Norge"'
-                    print(f"Søker med query: {search_query}")
+                    print(f"🔍 Søker med query: {search_query}")
 
                     search_results = google_custom_search(search_query)
                     all_emails = []
                     for url in search_results:
                         if not process_running:
-                            print("Prosessen er stoppet.")
+                            print("🔴 Prosessen er stoppet av brukeren.")
                             break
+                        print(f"🌐 Extracting emails from URL: {url}")
                         emails = extract_email_selenium(url)
                         all_emails.extend(emails)
 
@@ -126,24 +133,29 @@ def search_emails_and_display(batch_size=5):
                     email_list = list(unique_emails)
 
                     if email_list:
+                        print(f"📧 Found emails: {email_list}")
                         for email in email_list:
                             insert_query = """
                             INSERT INTO [dbo].[email_results] ([Org_nr], [company_name], [email])
-                            VALUES (?, ?, ?)
+                            VALUES (%s, %s, %s)
                             """
                             cursor.execute(insert_query, (org_nr, company_name, email))
                         conn.commit()
+                        print(f"✅ Emails inserted into database for org_nr: {org_nr}")
 
                     last_id = row_id
 
                 if not process_running:
+                    print("🔴 Exiting loop as process_running is False.")
                     break
 
+            print("✅ search_emails_and_display() completed.")
             return True
 
     except Exception as e:
-        print(f"Feil: {e}")
+        print(f"❌ Feil i search_emails_and_display(): {str(e)}")
         return False
+
 
 @api6_blueprint.route('/search_emails', methods=['GET'])
 def search_emails_endpoint():
@@ -219,18 +231,25 @@ def start_process_google():
             return jsonify({"status": "Process is already running"}), 400
 
         process_running = True
+        print(f"🔵 process_running is {process_running}")  # Add here
         print("Prosess starter...")
 
         def background_search():
             try:
-                search_emails_and_display()
+                print("🔵 background_search() started.")
+                result = search_emails_and_display()
+                if result:
+                    print("✅ background_search() completed successfully.")
+                else:
+                    print("⚠️ background_search() encountered an issue.")
             except Exception as e:
-                print(f"Feil ved prosessstart: {str(e)}")
+                print(f"❌ Feil ved prosessstart i background_search(): {str(e)}")
             finally:
                 global process_running
                 with process_lock:
                     process_running = False
-                print("Prosessen er ferdig, process_running satt tilbake til False.")
+                print("🔴 background_search() finished. process_running set to False.")
+
 
         threading.Thread(target=background_search, daemon=True).start()
 
