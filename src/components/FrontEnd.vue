@@ -44,10 +44,11 @@
                 <li>🔢 Totalt selskaper: {{ progressSummary.total_num }}</li>
                 <li>🔢 Aktive selskaper: {{ progressSummary.aktiv_selskap }}</li>
                 <li>📧 Aktive selskaper med e-post: {{ progressSummary.aktiv_selskap_med_epost }}</li>
-                <li>Gjennværende selskap:{{ progressSummery.ikke_prosessert }}</li>
-                <li>Siste prosessert: {{ progressSummary.last_id }}</li>
+                <li>⏳ Ikke prosessert: {{ progressSummary.ikke_prosessert }}</li>
+                <li>🆔 Siste ID: {{ progressSummary.last_id }}</li>
             </ul>
         </div>
+
         <button @click="fetchBrregProgress">
             Oppdater status fra Brønnøysund
         </button>
