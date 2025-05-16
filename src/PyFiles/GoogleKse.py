@@ -24,7 +24,13 @@ process_running = False  # Global flag to track the process state
 
 # Install ChromeDriver automatically if not set
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
-driver_path = chromedriver_autoinstaller.install()
+driver_path = None
+chromedriver_dir = os.path.join(os.path.dirname(chromedriver_autoinstaller.__file__), "135")
+
+if not os.path.exists(chromedriver_dir):
+    driver_path = chromedriver_autoinstaller.install()
+else:
+    driver_path = os.path.join(chromedriver_dir, "chromedriver")
 
 # Konfigurasjon for Selenium
 chrome_service = Service(executable_path=driver_path)
