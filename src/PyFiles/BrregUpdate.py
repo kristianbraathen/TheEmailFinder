@@ -148,11 +148,14 @@ def progress_summary():
             # Count all active companies with a non-null email
             cursor.execute('SELECT COUNT(*) FROM imported_table WHERE "Status" = %s AND "E_post_1" IS NOT NULL', ('aktiv selskap',))
             with_email = cursor.fetchone()[0]
-        last_id = get_last_processed_id()
+            cursor.execute('SELECT COUNT(*) FROM imported_table WHERE "Status" IS NULL')
+            remaining = cursor.fetchone()[0]
+            last_id = get_last_processed_id()
         return jsonify({
             "total_num": total_num,
             "aktiv_selskap": total_aktiv,
             "aktiv_selskap_med_epost": with_email,
+            "ikke_prosessert": remaining,
             "last_id": last_id
         })
     except Exception as e:
