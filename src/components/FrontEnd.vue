@@ -189,13 +189,13 @@
         }
     }
 
-    div[processingData] {
+    div[processSummary] {
         color: #ffffff;
     }
 
-        div[processingData] h3,
-        div[processingData] ul,
-        div[processingData] p {
+        div[processSummary] h3,
+        div[processSummary] ul,
+        div[processSummary] p {
             color: #ffffff;
         }
 
