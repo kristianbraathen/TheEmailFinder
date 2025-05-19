@@ -80,9 +80,9 @@ def search_emails_and_display(batch_size=5):
             
             # Bruker SQLAlchemy tekst-spørring med korrekt PostgreSQL-syntaks
             query = text(f"""
-                SELECT id, Org_nr, Firmanavn
+                SELECT id, "Org_nr", "Firmanavn"
                 FROM imported_table
-                WHERE Status = 'aktiv selskap' AND E_post_1 IS NULL AND id > :last_id
+                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
                 ORDER BY id ASC
                 LIMIT :limit
             """)
@@ -123,7 +123,7 @@ def search_emails_and_display(batch_size=5):
                     print(f"📧 Found emails: {email_list}")
                     for email in email_list:
                         insert_query = text("""
-                            INSERT INTO email_results (Org_nr, company_name, email)
+                            INSERT INTO email_results ("Org_nr", company_name, email)
                             VALUES (:org_nr, :company_name, :email)
                         """)
                         db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
