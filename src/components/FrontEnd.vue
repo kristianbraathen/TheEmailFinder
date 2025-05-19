@@ -189,13 +189,13 @@
         }
     }
 
-    div[processSummary] {
+    div[progressSummary] {
         color: #ffffff;
     }
 
-        div[processSummary] h3,
-        div[processSummary] ul,
-        div[processSummary] p {
+        div[progressSummary] h3,
+        div[progressSummary] ul,
+        div[progressSummary] p {
             color: #ffffff;
         }
 
