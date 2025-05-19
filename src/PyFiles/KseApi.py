@@ -183,7 +183,7 @@ def start_process_kse():
 
 @api3_blueprint.route('/stop_process_kse', methods=['POST'])
 def stop_process_kse():
-     global process_running
+    global process_running
     with process_lock:
         if not process_running:
             return jsonify({"status": "Prosess var ikke i gang (allerede stoppet)."}), 200
@@ -196,3 +196,4 @@ def stop_process_kse():
             process_running = True
             print(f"Feil ved stopp prosess: {str(e)}")
             return jsonify({"status": f"Feil ved stopp: {str(e)}"}), 500
+
