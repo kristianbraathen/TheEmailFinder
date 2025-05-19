@@ -98,34 +98,35 @@ def extract_company_status(data):
 
 def process_all_in_batches(batch_size=50):
     """
-    Processes all organizations in batches using a single DB connection per batch.
+    Processes all organizations in batches based on rows where Status is NULL.
+    Each batch uses a new DB connection and commits changes immediately.
     """
-    last_id = get_last_processed_id()
     try:
         while True:
             with psycopg2.connect(connection_string) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    'SELECT "Org_nr", "id" FROM imported_table WHERE "id" > %s ORDER BY "id" ASC LIMIT %s',
-                    (last_id, batch_size)
+                    'SELECT "Org_nr", "id" FROM imported_table WHERE "Status" IS NULL ORDER BY "id" ASC LIMIT %s',
+                    (batch_size,)
                 )
                 rows = cursor.fetchall()
 
                 if not rows:
-                    print("Ingen flere organisasjoner å behandle.")
+                    print("✅ Ingen flere organisasjoner å behandle.")
                     break
 
-                print(f"🟡 Starter batch med {len(rows)} organisasjoner.")
+                print(f"🟡 Behandler batch med {len(rows)} organisasjoner...")
 
                 for org_nr, _id in rows:
                     try:
-                        process_organization_with_single_call(org_nr, cursor, conn)
+                        result = process_organization_with_single_call(org_nr, cursor, conn)
+                        print(f"✅ Org {org_nr}: {result}")
                     except Exception as e:
-                        print(f"Feil under prosessering av {org_nr}: {e}")
-                    last_id = _id
+                        print(f"❌ Feil under prosessering av {org_nr} (id={_id}): {e}")
 
     except Exception as e:
-        print(f"Feil under batch-prosessering: {e}")
+        print(f"🚨 Kritisk feil under batch-prosessering: {e}")
+
 
 @api2_blueprint.route('/start_process_and_clean', methods=['POST'])
 def start_process_and_clean():
