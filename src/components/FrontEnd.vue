@@ -38,7 +38,7 @@
             <button @click="manualSearch">Søk</button>
         </div>
         <!-- Resultatvisning -->
-        <div v-if="progressSummary">
+        <div v-if="progressSummary" class="progress-summary">
             <h3>Status fra Brønnøysund</h3>
             <ul>
                 <li>🔢 Totalt selskaper: {{ progressSummary.total_num }}</li>
@@ -48,7 +48,6 @@
                 <li>🆔 Siste ID: {{ progressSummary.last_id }}</li>
             </ul>
         </div>
-
         <button @click="fetchBrregProgress">
             Oppdater status fra Brønnøysund
         </button>
@@ -189,15 +188,14 @@
         }
     }
 
-    div[progressSummary] {
-        color: #ffffff;
+    .progress-summary {
+        background-color: #1e1e1e; /* Dark background */
+        color: #ffffff; /* White text */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
     }
 
-        div[progressSummary] h3,
-        div[progressSummary] ul,
-        div[progressSummary] p {
-            color: #ffffff;
-        }
 
     body {
         font-family: Arial, sans-serif;
