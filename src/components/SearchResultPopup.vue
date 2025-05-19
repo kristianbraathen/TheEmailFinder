@@ -63,7 +63,7 @@
         methods: {
             async fetchEmailResults() {
                 try {
-                    const response = await fetch('/get-email-results');
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
                     if (!response.ok) {
                         throw new Error('Feil ved henting av e-postresultater');
                     }
@@ -76,7 +76,7 @@
             },
             async updateEmail(orgNr, email) {
                 try {
-                    const response = await fetch('/update_email', {
+                    const response = await fetch('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/update_email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -108,7 +108,7 @@
                 this.loadingOrgNr = orgNr;
 
                 try {
-                    const response = await fetch('/delete_stored_result', {
+                    const response = await fetch('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/delete_stored_result', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ org_nr: orgNr })

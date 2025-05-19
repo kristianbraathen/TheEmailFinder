@@ -11,11 +11,7 @@
         <button @click="openPopup3">Google Search</button>
         <button @click="openPopup1">Facebook Scrap</button>
         <button @click="openPopup2">1881 Scrap</button>
-        <button @click="fetchSearchResults().then(openPopup4)"
-                :disabled="!searchResults || searchResults.length === 0"
-                :class="{'enabled-button': searchResults && searchResults.length > 0, 'disabled-button': !searchResults || searchResults.length === 0}">
-            Vis resultater
-        </button>
+        <button @click="openPopup4">Vis resultater</button>
         <GoogleKsePopup :isVisible="showPopup3"
                         :companies="companies"
                         @close="closePopup3" />
@@ -128,15 +124,6 @@
                     console.error("Feil ved manuell søk:", error);
                     this.status = "Feil ved manuell søk.";
                     this.searchResults = null;
-                }
-            },
-            async fetchSearchResults() {
-                try {
-                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
-                    this.searchResults = Array.isArray(response.data) ? response.data : [];
-                } catch (error) {
-                    console.error("Error fetching search results:", error);
-                    this.searchResults = [];
                 }
             },
             removeResult(orgNr) {
