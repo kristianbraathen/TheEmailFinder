@@ -4,7 +4,7 @@ import psycopg2
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from flask import Flask, jsonify, Blueprint, request
+from flask import Flask, jsonify, Blueprint, request, current_app
 from flask_cors import CORS
 import re
 from threading import Lock
@@ -161,13 +161,15 @@ def start_process_kse():
         print("Prosess starter...")
 
         def background_search():
+            from src.PyFiles.app import app  # Pass på at dette ikke skaper sirkulær import!
             try:
-                print("🔵 background_search() started.")
-                result = search_emails_and_display()
-                if result:
-                    print("✅ background_search() completed successfully.")
-                else:
-                    print("⚠️ background_search() encountered an issue.")
+                with app.app_context(): 
+                    print("🔵 background_search() started.")
+                    result = search_emails_and_display()
+                    if result:
+                        print("✅ background_search() completed successfully.")
+                    else:
+                        print("⚠️ background_search() encountered an issue.")
             except Exception as e:
                 print(f"❌ Feil ved prosessstart i background_search(): {str(e)}")
             finally:
@@ -179,7 +181,6 @@ def start_process_kse():
         threading.Thread(target=background_search, daemon=True).start()
 
     return jsonify({"status": "Prosess startet og kjører i bakgrunnen."}), 200
-
 
 @api3_blueprint.route('/stop_process_kse', methods=['POST'])
 def stop_process_kse():
