@@ -11,7 +11,7 @@
         <button @click="openPopup3">Google Search</button>
         <button @click="openPopup1">Facebook Scrap</button>
         <button @click="openPopup2">1881 Scrap</button>
-        <button @click="openPopup4">Vis resultater</button>
+        <button @click="openPopup4(); fetchEmailResults();" >Vis resultater</button>
         <GoogleKsePopup :isVisible="showPopup3"
                         :companies="companies"
                         @close="closePopup3" />
@@ -73,6 +73,7 @@
                 processingData: null,
                 search_by_company_name: "",
                 searchResults: null,
+                searchResultsDb: null,
                 isUpdating: false,
                 showPopup1: false,
                 showPopup2: false,
@@ -124,6 +125,19 @@
                     console.error("Feil ved manuell søk:", error);
                     this.status = "Feil ved manuell søk.";
                     this.searchResults = null;
+                }
+            },
+            async fetchEmailResults() {
+                try {
+                    const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+                    if (!response.ok) {
+                        throw new Error('Feil ved henting av e-postresultater');
+                    }
+                    const results = await response.json();
+                    this.searchResultsDb = results;
+                } catch (error) {
+                    console.error(error);
+                    alert('Kunne ikke hente e-postresultater.');
                 }
             },
             removeResult(orgNr) {
