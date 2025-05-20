@@ -5,6 +5,7 @@ from .Db import db
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
+CORS(email_result_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
 # --- MODELS ---
 
