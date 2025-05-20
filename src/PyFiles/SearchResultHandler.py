@@ -144,7 +144,7 @@ def initialize_email_results():
     except Exception as e:
         return jsonify({'error': f'Failed to create tables: {str(e)}'}), 500
 
-@email_result_blueprint.route('/get-email-results', methods=['GET'])
+@email_result_blueprint.route('/get_email_results', methods=['GET'])
 def get_email_results():
     try:
         email_results = db.session.query(EmailResult).all()
