@@ -2,26 +2,25 @@
     <div v-if="visible" class="popup-overlay">
         <div class="popup-content">
             <h2>Søkeresultater</h2>
-            <!-- Show message if no results -->
+
             <div v-if="results.length === 0">
                 <p>Ingen resultater her ennå.</p>
             </div>
 
-            <div v-for="result in results" :key="result.Org_nr" class="result-card">
-                <h3>{{ result.company_name }} ({{ result.Org_nr }})</h3>
+            <div v-for="group in groupedResults" :key="group.Org_nr" class="result-card">
+                <h3>{{ group.company_name }} ({{ group.Org_nr }})</h3>
 
-                <!-- Update email -->
-                <input v-model="result.email"
-                       :placeholder="'Email: ' + result.email"
-                       @blur="updateEmail(result.Org_nr, result.email)"
-                       type="email" />
+                <label for="emailSelect">Velg e-post:</label>
+                <select v-model="selectedEmails[group.Org_nr]" id="emailSelect">
+                    <option v-for="email in group.emails" :key="email" :value="email">{{ email }}</option>
+                </select>
 
-                <ul>
-                    <li v-for="email in result.email" :key="email">{{ email }}</li>
-                </ul>
+                <button @click="updateEmail(group.Org_nr, selectedEmails[group.Org_nr])">
+                    💾 Oppdater valgt e-post
+                </button>
 
-                <button @click="confirmDiscard(result.Org_nr)" :disabled="loadingOrgNr === result.Org_nr">
-                    <span v-if="loadingOrgNr === result.Org_nr">⏳ Forkaster...</span>
+                <button @click="confirmDiscard(group.Org_nr)" :disabled="loadingOrgNr === group.Org_nr">
+                    <span v-if="loadingOrgNr === group.Org_nr">⏳ Forkaster...</span>
                     <span v-else>🗑 Forkast</span>
                 </button>
             </div>
@@ -38,6 +37,8 @@
 </template>
 
 <script>
+    import axios from 'axios';
+
     export default {
         name: 'SearchResultsPopup',
         props: {
@@ -49,6 +50,7 @@
         data() {
             return {
                 results: [],
+                selectedEmails: {},
                 confirmingOrgNr: null,
                 loadingOrgNr: null
             };
@@ -60,15 +62,35 @@
                 }
             }
         },
+        computed: {
+            groupedResults() {
+                const map = {};
+                this.results.forEach(result => {
+                    const key = result.Org_nr;
+                    if (!map[key]) {
+                        map[key] = {
+                            company_name: result.company_name,
+                            Org_nr: key,
+                            emails: []
+                        };
+                    }
+                    map[key].emails.push(result.email);
+                });
+                return Object.values(map);
+            }
+        },
         methods: {
             async fetchEmailResults() {
                 try {
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
-                    if (!response.ok) {
-                        throw new Error('Feil ved henting av e-postresultater');
-                    }
-                    const results = await response.json();
-                    this.results = results;
+                    this.results = response.data;
+
+                    // Sett default valgt e-post for hver org.nr til første e-post i listen
+                    this.results.forEach(result => {
+                        if (!this.selectedEmails[result.Org_nr]) {
+                            this.selectedEmails[result.Org_nr] = result.email;
+                        }
+                    });
                 } catch (error) {
                     console.error(error);
                     alert('Kunne ikke hente e-postresultater.');
@@ -133,7 +155,6 @@
         }
     };
 </script>
- 
 <style scoped>
     .popup-overlay {
         position: fixed; /* Fixed positioning to cover the entire viewport */
