@@ -24,14 +24,14 @@
                     <span v-if="loadingOrgNr === group.Org_nr">⏳ Forkaster...</span>
                     <span v-else>🗑 Forkast</span>
                 </button>
-            </div>
 
-            <div v-if="confirmingOrgNr" class="confirm-dialog">
-                <p>Er du sikker på at du vil forkaste resultatet for org.nr {{ confirmingOrgNr }}?</p>
-                <button @click="discardConfirmed">Ja</button>
-                <button @click="cancelConfirmation">Nei</button>
-            </div>
 
+                <div v-if="confirmingOrgNr" class="confirm-dialog">
+                    <p>Er du sikker på at du vil forkaste resultatet for org.nr {{ confirmingOrgNr }}?</p>
+                    <button @click="discardConfirmed">Ja</button>
+                    <button @click="cancelConfirmation">Nei</button>
+                </div>
+            </div>
             <button @click="$emit('close')">Lukk</button>
         </div>
     </div>
