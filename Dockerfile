@@ -56,6 +56,8 @@ RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
 # Sett miljøvariabler
 ENV CHROME_BIN="/usr/bin/google-chrome"
+ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
+
 ENV PORT=80
 ENV PYTHONPATH=/app/src/PyFiles
 

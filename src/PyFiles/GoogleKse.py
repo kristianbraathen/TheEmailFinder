@@ -14,7 +14,6 @@ from threading import Lock
 import threading
 import chromedriver_autoinstaller
 import os
-
 from .Db import db  # for SQLAlchemy session
 
 # Flask blueprint og CORS
@@ -28,9 +27,10 @@ connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
 # ChromeDriver setup
 try:
-    driver_path = chromedriver_autoinstaller.install()
+    driver_path = os.getenv('CHROMEDRIVER_PATH') or chromedriver_autoinstaller.install()
 except Exception as e:
     print(f"Feil under installasjon av ChromeDriver: {e}")
+    # Som fallback: prøv å bruke manuelt path basert på versjon
     version = chromedriver_autoinstaller.utils.get_chrome_version().split('.')[0]
     chromedriver_dir = os.path.join(os.path.dirname(chromedriver_autoinstaller.__file__), version)
     driver_path = os.path.join(chromedriver_dir, "chromedriver")
