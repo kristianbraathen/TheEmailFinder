@@ -163,16 +163,18 @@
 
 <style scoped>
     .popup-overlay {
-        position: fixed; /* Fixed positioning to cover the entire viewport */
+        position: fixed;
         top: 50%;
         left: 50%;
-        width: 75%;
-        height: 75%;
-        background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        width: 75vw;
+        height: 75vh;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 999;
-        display: flex; /* Flexbox for centering */
-        justify-content: center; /* Horizontal centering */
-        align-items: center; /* Vertical centering */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
     }
 
     .popup-content {
