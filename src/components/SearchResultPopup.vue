@@ -10,8 +10,9 @@
             <div v-for="group in groupedResults" :key="group.Org_nr" class="result-card">
                 <h3>{{ group.company_name }} ({{ group.Org_nr }})</h3>
 
-                <label for="emailSelect">Velg e-post:</label>
-                <select v-model="selectedEmails[group.Org_nr]" id="emailSelect">
+                <label :for="'emailSelect-' + group.Org_nr">Velg e-post:</label>
+                <select :id="'emailSelect-' + group.Org_nr"
+                        v-model="selectedEmails[group.Org_nr]">
                     <option v-for="email in group.emails" :key="email" :value="email">{{ email }}</option>
                 </select>
 
@@ -74,7 +75,10 @@
                             emails: []
                         };
                     }
-                    map[key].emails.push(result.email);
+                    // Legg kun til unike e-poster
+                    if (!map[key].emails.includes(result.email)) {
+                        map[key].emails.push(result.email);
+                    }
                 });
                 return Object.values(map);
             }
@@ -85,10 +89,11 @@
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
                     this.results = response.data;
 
-                    // Sett default valgt e-post for hver org.nr til første e-post i listen
-                    this.results.forEach(result => {
-                        if (!this.selectedEmails[result.Org_nr]) {
-                            this.selectedEmails[result.Org_nr] = result.email;
+                    // Sett default valgt e-post for hver org.nr til første e-post i gruppen
+                    this.selectedEmails = {};
+                    this.groupedResults.forEach(group => {
+                        if (group.emails.length > 0) {
+                            this.selectedEmails[group.Org_nr] = group.emails[0];
                         }
                     });
                 } catch (error) {
@@ -155,6 +160,7 @@
         }
     };
 </script>
+
 <style scoped>
     .popup-overlay {
         position: fixed; /* Fixed positioning to cover the entire viewport */
@@ -188,6 +194,7 @@
         padding: 10px;
         border-radius: 8px;
         margin-bottom: 10px;
+        color: #000;
     }
 
     .confirm-dialog {
@@ -195,5 +202,6 @@
         padding: 10px;
         border: 1px solid #cc0000;
         margin: 10px 0;
+        color: #000;
     }
 </style>
