@@ -24,7 +24,7 @@
                       :companies="companies"
                       @close="closePopup2" />
         <!-- SearchResultPopup popup -->
-        <SearchResultsPopup :visible="showPopup4"
+        <SearchResultPopup :visible="showPopup4"
                             @close="closePopup4"
                             @updateResults="removeResult" />
         <!-- Manuelt søk -->
@@ -129,18 +129,15 @@
             async fetchEmailResults() {
                 try {
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
-                    if (!response.ok) {
+                    // Axios gir status i response.status
+                    if (response.status !== 200) {
                         throw new Error('Feil ved henting av e-postresultater');
                     }
-                    const results = response.json();
-                    this.searchResultsDb = results;
+                    this.searchResultsDb = response.data;
                 } catch (error) {
                     console.error(error);
                     alert('Kunne ikke hente e-postresultater.');
                 }
-            },
-            removeResult(orgNr) {
-                this.searchResults = this.searchResults.filter(r => r.org_nr !== orgNr);
             },
             openPopup1() {
                 this.showPopup1 = true;
