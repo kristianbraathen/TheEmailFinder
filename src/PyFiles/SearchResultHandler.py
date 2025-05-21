@@ -177,7 +177,7 @@ def delete_stored_result():
         db.session.rollback()
         return jsonify({"status": "Feil under sletting", "error": str(e)}), 500
 
-@email_result_blueprint.route('/update_emails', methods=['POST'])
+@email_result_blueprint.route('/update_email', methods=['POST'])
 def update_email():
     data = request.get_json()
     org_nr = data.get('org_nr')
