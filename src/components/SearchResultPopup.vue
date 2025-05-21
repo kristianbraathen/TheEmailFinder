@@ -7,7 +7,7 @@
                 <p>Ingen resultater her ennå.</p>
             </div>
 
-            <div v-for="group in groupedResults" :key="group.Org_nr" class="result-card">
+            <div v-for="group in paginatedResults" :key="group.Org_nr" class="result-card">
                 <h3>{{ group.company_name }} ({{ group.Org_nr }})</h3>
 
                 <label :for="'emailSelect-' + group.Org_nr">Velg e-post:</label>
@@ -19,19 +19,23 @@
                 <button @click="updateEmail(group.Org_nr, selectedEmails[group.Org_nr])">
                     💾 Oppdater valgt e-post
                 </button>
-
                 <button @click="confirmDiscard(group.Org_nr)" :disabled="loadingOrgNr === group.Org_nr">
                     <span v-if="loadingOrgNr === group.Org_nr">⏳ Forkaster...</span>
                     <span v-else>🗑 Forkast</span>
                 </button>
-
-
                 <div v-if="confirmingOrgNr" class="confirm-dialog">
                     <p>Er du sikker på at du vil forkaste resultatet for org.nr {{ confirmingOrgNr }}?</p>
                     <button @click="discardConfirmed">Ja</button>
                     <button @click="cancelConfirmation">Nei</button>
                 </div>
             </div>
+            <!-- 🔽 PAGINERING -->
+            <div class="pagination">
+                <button @click="currentPage--" :disabled="currentPage === 1">Forrige</button>
+                <span>Side {{ currentPage }} av {{ totalPages }}</span>
+                <button @click="currentPage++" :disabled="currentPage === totalPages">Neste</button>
+            </div>
+
             <button @click="$emit('close')">Lukk</button>
         </div>
     </div>
@@ -53,7 +57,9 @@
                 results: [],
                 selectedEmails: {},
                 confirmingOrgNr: null,
-                loadingOrgNr: null
+                loadingOrgNr: null,
+                currentPage: 1,
+                itemsPerPage: 10,
             };
         },
         watch: {
@@ -81,6 +87,14 @@
                     }
                 });
                 return Object.values(map);
+            },
+            paginatedResults() {
+                const start = (this.currentPage - 1) * this.itemsPerPage;
+                const end = start + this.itemsPerPage;
+                return this.groupedResults.slice(start, end);
+            },
+            totalPages() {
+                return Math.ceil(this.groupedResults.length / this.itemsPerPage);
             }
         },
         methods: {
@@ -205,5 +219,12 @@
         border: 1px solid #cc0000;
         margin: 10px 0;
         color: #000;
+    }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
     }
 </style>
