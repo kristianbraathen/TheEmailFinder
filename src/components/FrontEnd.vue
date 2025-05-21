@@ -11,7 +11,7 @@
         <button @click="openPopup3">Google Search</button>
         <button @click="openPopup1">Facebook Scrap</button>
         <button @click="openPopup2">1881 Scrap</button>
-        <button @click="openPopup4(); fetchEmailResults();" >Vis resultater</button>
+        <button @click="openPopup4" >Vis resultater</button>
         <GoogleKsePopup :isVisible="showPopup3"
                         :companies="companies"
                         @close="closePopup3" />
@@ -24,8 +24,7 @@
                       :companies="companies"
                       @close="closePopup2" />
         <!-- SearchResultPopup popup -->
-        <SearchResultsPopup :results="searchResults"
-                            :visible="showPopup4"
+        <SearchResultsPopup :visible="showPopup4"
                             @close="closePopup4"
                             @updateResults="removeResult" />
         <!-- Manuelt søk -->
@@ -133,7 +132,7 @@
                     if (!response.ok) {
                         throw new Error('Feil ved henting av e-postresultater');
                     }
-                    const results = await response.json();
+                    const results = response.json();
                     this.searchResultsDb = results;
                 } catch (error) {
                     console.error(error);
