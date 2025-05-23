@@ -194,13 +194,13 @@ def update_email():
 
         # Oppdater e-post i imported_table
         cursor.execute(
-            "UPDATE imported_table SET e_post_1 = %s WHERE org_nr = %s",
+            "UPDATE imported_table SET "E_post_1" = %s WHERE "Org_nr" = %s",
             (email, org_nr)
         )
 
         # Slett fra EmailResult (search_result)
         cursor.execute(
-            "DELETE FROM email_result WHERE org_nr = %s",
+            "DELETE FROM search_results WHERE "Org_nr" = %s",
             (org_nr,)
         )
         deleted_rows = cursor.rowcount
