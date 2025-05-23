@@ -3,6 +3,7 @@ from flask_cors import CORS
 from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlalchemy.ext.declarative import declarative_base
 from .Db import db,get_db_connection
+import psycopg2
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
@@ -213,6 +214,7 @@ def update_email():
         }), 200
 
     except Exception as e:
-        print("Feil i update_email:", e)
-        return jsonify({'error': 'Intern feil'}), 500
+        print(f"Feil ved oppdatering/sletting: {e}")  # Logg feilen
+        return jsonify({'error': 'Intern feil', 'details': str(e)}), 500
+
 
