@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_cors import CORS
 from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlalchemy.ext.declarative import declarative_base
-from .Db import db
+from .Db import db,get_db_connection
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
