@@ -177,6 +177,7 @@ def delete_stored_result():
         db.session.rollback()
         return jsonify({"status": "Feil under sletting", "error": str(e)}), 500
 
+
 @email_result_blueprint.route('/update_email', methods=['POST'])
 def update_email():
     data = request.get_json()
@@ -187,26 +188,31 @@ def update_email():
         return jsonify({'error': 'Ugyldige data'}), 400
 
     try:
-        # Oppdater e-post i imported_table
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # Oppdater e-post i imported_table
         cursor.execute(
             "UPDATE imported_table SET e_post_1 = %s WHERE org_nr = %s",
             (email, org_nr)
         )
+
+        # Slett fra EmailResult (search_result)
+        cursor.execute(
+            "DELETE FROM email_result WHERE org_nr = %s",
+            (org_nr,)
+        )
+        deleted_rows = cursor.rowcount
+
         conn.commit()
         cursor.close()
         conn.close()
-
-        # Slett søkeresultat fra EmailResult (search_result)
-        deleted_rows = db.session.query(EmailResult).filter_by(Org_nr=org_nr).delete()
-        db.session.commit()
 
         return jsonify({
             'status': f"E-post oppdatert og {deleted_rows} søkeresultat(er) slettet for org.nr {org_nr}."
         }), 200
 
     except Exception as e:
-        db.session.rollback()
-        print(f"Feil ved oppdatering/sletting: {e}")
+        print("Feil i update_email:", e)
         return jsonify({'error': 'Intern feil'}), 500
+
