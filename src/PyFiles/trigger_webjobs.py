@@ -10,12 +10,12 @@ WEBJOBS_BASE_URL = f"https://theemailfinder.scm.azurewebsites.net/api/triggeredw
 WEBJOBS_USER = os.getenv("WEBJOBS_USER")
 WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
 
-STOP_FLAG_FILE = "/app/stop_webjob.flag"  # <-- Endre hvis nødvendig
+STOP_FLAG_FILE = "/app/stop_webjob.flag"  # <-- Endre hvis nÃ¸dvendig
 
 @trigger_webjobs_bp.route("/start", methods=["POST"])
 def trigger_webjob_start():
     try:
-        # Slett gammelt stoppflagg først (start ny runde)
+        # Slett gammelt stoppflagg fÃ¸rst (start ny runde)
         if os.path.exists(STOP_FLAG_FILE):
             os.remove(STOP_FLAG_FILE)
 
@@ -32,6 +32,6 @@ def trigger_webjob_stop():
     try:
         with open(STOP_FLAG_FILE, "w") as f:
             f.write("STOP")
-        return jsonify({"status": "Stoppflagg satt – WebJob bør avslutte snart"}), 200
+        return jsonify({"status": "Stoppflagg satt â€“ WebJob bÃ¸r avslutte snart"}), 200
     except Exception as e:
         return jsonify({"status": "Kunne ikke skrive stoppflagg", "details": str(e)}), 500
