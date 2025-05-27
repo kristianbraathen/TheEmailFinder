@@ -2,12 +2,13 @@
     <div v-if="isVisible" class="popup-overlay">
         <div class="popup-content">
             <h2>Finn e-poster med Google søk</h2>
-            <button @click="startProcess">Start Prosessen</button>
+            <button @click="startProcess" :disabled="loading">Start Prosessen</button>
             <p v-if="processMessage">{{ processMessage }}</p>
             <div class="control-buttons">
-                <button @click="stopProcess">Stopp Prosessen</button>
+                <button @click="stopProcess" :disabled="loading">Stopp Prosessen</button>
                 <button @click="closePopup">Lukk</button>
             </div>
+            <p v-if="loading">Prosessen kjører, vennligst vent...</p>
         </div>
     </div>
 </template>
@@ -22,26 +23,46 @@
         data() {
             return {
                 processMessage: "",
+                loading: false,
             };
         },
         methods: {
             async startProcess() {
+                this.loading = true;
+                this.processMessage = "";
                 try {
-                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/start_process_google");
-                    this.processMessage = response.data.status;
+                    // Steg 1: Klargjør databasen/tabellen for nye resultater
+                    await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results"
+                    );
+
+                    // Steg 2: Start WebJob-en som gjør e-postsøkene
+                    const startResponse = await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start"
+                    );
+
+                    this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
                 } catch (error) {
-                    this.processMessage = "Feil under start av prosess.";
+                    this.processMessage = "Feil under start av prosess/WebJob.";
                     console.error(error);
+                } finally {
+                    this.loading = false;
                 }
             },
             async stopProcess() {
+                this.loading = true;
+                this.processMessage = "";
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/GoogleKse/stop_process_google");
-                    this.processMessage = response.data.status;
+                    const stopResponse = await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/stop"
+                    );
+
+                    this.processMessage = stopResponse.data.status || "Stoppflagg satt – WebJob bør avslutte snart.";
                 } catch (error) {
-                    this.processMessage = "Feil under stopp av prosess.";
+                    this.processMessage = "Feil under stopp av WebJob.";
                     console.error(error);
+                } finally {
+                    this.loading = false;
                 }
             },
             closePopup() {
@@ -50,7 +71,6 @@
         },
     };
 </script>
-
 <style scoped>
     .popup-overlay {
         position: fixed;

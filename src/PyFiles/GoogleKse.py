@@ -82,6 +82,8 @@ def extract_email_selenium(url):
         print(f"Feil ved uthenting av e-post fra {url}: {e}")
         return []
 
+STOP_FLAG_FILE = "/app/stop_webjob.flag"
+
 def search_emails_and_display(batch_size=5):
     global process_running
     try:
@@ -91,9 +93,14 @@ def search_emails_and_display(batch_size=5):
         last_id = 0
         
         while True:
+            # Sjekk stoppflagget på disk
+            if os.path.exists(STOP_FLAG_FILE):
+                print("🔴 Stoppflagg oppdaget på disk. Avslutter prosess.")
+                process_running = False
+                break
+
             print(f"🟡 Fetching batch starting from last_id: {last_id}")
             
-            # Bruker SQLAlchemy tekst-spørring med korrekt PostgreSQL-syntaks
             query = text(f"""
                 SELECT id, "Org_nr", "Firmanavn"
                 FROM imported_table
@@ -111,6 +118,12 @@ def search_emails_and_display(batch_size=5):
             print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
 
             for row in rows:
+                # Sjekk stoppflagget også her for tidlig avbrudd
+                if os.path.exists(STOP_FLAG_FILE):
+                    print("🔴 Stoppflagg oppdaget under batch-prosessering. Avslutter prosess.")
+                    process_running = False
+                    break
+
                 if not process_running:
                     print("🔴 Prosessen er stoppet av brukeren.")
                     break
@@ -124,6 +137,10 @@ def search_emails_and_display(batch_size=5):
                 search_results = google_custom_search(search_query)
                 all_emails = []
                 for url in search_results:
+                    if os.path.exists(STOP_FLAG_FILE):
+                        print("🔴 Stoppflagg oppdaget under url-prosessering. Avslutter prosess.")
+                        process_running = False
+                        break
                     if not process_running:
                         print("🔴 Prosessen er stoppet av brukeren.")
                         break
@@ -158,6 +175,7 @@ def search_emails_and_display(batch_size=5):
         print(f"❌ Feil i search_emails_and_display(): {str(e)}")
         db.session.rollback()
         return False
+
 
 @api6_blueprint.route('/start_process_google', methods=['POST'])
 def start_process_google():
