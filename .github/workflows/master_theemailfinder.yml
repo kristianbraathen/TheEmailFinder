@@ -72,8 +72,8 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         env:
-          DEPLOY_USER: ${{ secrets.WEBJOBS_USER }}
-          DEPLOY_PASS: ${{ secrets.WEBJOBS_PASS }}
+          DEPLOY_USER: ${{ env.WEBJOBS_USER }}
+          DEPLOY_PASS: ${{ env.WEBJOBS_PASS }}
         run: |
           curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
             --data-binary @"webjobemailsearch.zip" \
