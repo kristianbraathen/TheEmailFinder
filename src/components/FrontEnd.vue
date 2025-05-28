@@ -94,13 +94,27 @@
         methods: {
             async processAndCleanOrganizations() {
                 this.isUpdating = true;
+
                 try {
+                    // Start bakgrunnsjobben
                     await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/start_process_and_clean");
-                    await this.fetchBrregProgress();
-                    // Optionally show a toast or message: "Prosess startet"
+
+                    // Start polling status
+                    const pollInterval = 3000; // 3 sekunder
+                    const poll = async () => {
+                        const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/BrregUpdate/status");
+                        if (response.data.running) {
+                            setTimeout(poll, pollInterval);
+                        } else {
+                            // Ferdig
+                            this.isUpdating = false;
+                            // Du kan evt. vise toast her: "Ferdig!"
+                        }
+                    };
+                    poll(); // start første polling
+
                 } catch (error) {
-                    // Optionally show an error message
-                } finally {
+                    console.error("Feil under prosess:", error);
                     this.isUpdating = false;
                 }
             },

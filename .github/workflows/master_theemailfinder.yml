@@ -9,6 +9,8 @@ env:
   DOCKER_IMAGE_NAME: 'krisdocker307/theemailfinder'
   DOCKER_IMAGE_TAG: 'latest'
   DATABASE_CONNECTION_STRING: ${{ secrets.DATABASE_CONNECTION_STRING }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+  DEPLOY_PASS: ${{ secrets.DEPLOY_PASS }}
 
 on:
   push:
@@ -72,7 +74,7 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         run: |
-          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            --data-binary @"webjobemailsearch.zip" \
-            -H "Content-Type: application/zip" \
-            https://${{ env.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch
+            curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+                --data-binary @"webjobemailsearch.zip" \
+                -H "Content-Type: application/zip" \
+                https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch

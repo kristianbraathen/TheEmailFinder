@@ -128,12 +128,33 @@ def process_all_in_batches(batch_size=50):
         print(f"🚨 Kritisk feil under batch-prosessering: {e}")
 
 
+process_running = False
+process_lock = threading.Lock()
+
 @api2_blueprint.route('/start_process_and_clean', methods=['POST'])
 def start_process_and_clean():
-    def background_job():
-        process_all_in_batches()
-    threading.Thread(target=background_job, daemon=True).start()
-    return jsonify({"status": "Processing started"}), 202
+    global process_running
+
+    with process_lock:
+        if process_running:
+            return jsonify({"status": "Already running"}), 400
+
+        process_running = True
+
+        def background_job():
+            try:
+                process_all_in_batches()
+            finally:
+                global process_running
+                with process_lock:
+                    process_running = False
+
+        threading.Thread(target=background_job, daemon=True).start()
+        return jsonify({"status": "Processing started"}), 202
+
+@api2_blueprint.route('/status', methods=['GET'])
+def get_status():
+    return jsonify({"running": process_running})
 
 @api2_blueprint.route('/progress_summary', methods=['GET'])
 def progress_summary():

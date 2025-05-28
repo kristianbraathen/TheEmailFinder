@@ -4,8 +4,7 @@ import os
 
 trigger_webjobs_bp = Blueprint("trigger_webjobs", __name__)
 
-WEBJOB_NAME = "webjobemailsearch"  # <- Bytt med riktig navn
-WEBJOBS_BASE_URL = f"https://theemailfinder.scm.azurewebsites.net/api/triggeredwebjobs/{WEBJOB_NAME}/run"
+WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch/run"
 
 WEBJOBS_USER = os.getenv("WEBJOBS_USER")
 WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
