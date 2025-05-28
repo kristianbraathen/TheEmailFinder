@@ -44,9 +44,9 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Create WebJob zip
+      - name: Create WebJob ZIP
         run: |
-          zip -r emailsearch.zip App_Data
+          zip -r webjobemailsearch.zip App_Data
 
       - name: Log in to Azure CLI
         uses: azure/login@v1
@@ -65,8 +65,17 @@ jobs:
 
       - name: Set environment variables in Azure Web App
         run: |
-          az webapp config appsettings set --resource-group theemailfinder --name ${{ env.AZURE_WEBAPP_NAME }} --settings DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }}
+          az webapp config appsettings set \
+            --resource-group theemailfinder \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --settings DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }}
 
-      - name: Upload WebJob zip
+      - name: Upload WebJob ZIP via Kudu API
+        env:
+          DEPLOY_USER: ${{ secrets.WEBJOBS_USER }}
+          DEPLOY_PASS: ${{ secrets.WEBJOBS_PASS }}
         run: |
-          az webapp webjob triggered upload --resource-group theemailfinder --name ${{ env.AZURE_WEBAPP_NAME }} --webjob-name webjobemailsearch --src ./emailsearch.zip
+          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+            --data-binary @"webjobemailsearch.zip" \
+            -H "Content-Type: application/zip" \
+            https://${{ env.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch
