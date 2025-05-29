@@ -46,12 +46,12 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Prepare WebJob ZIP structure
+      - name: Prepare WebJob ZIP
         run: |
-            mkdir -p webjobemailsearch
-            cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
-            cp -r src webjobemailsearch/
-            cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
+          mkdir -p webjobemailsearch
+          cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
+          cp -r App_Data/jobs/triggered/webjobemailsearch/src webjobemailsearch/
+          cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
 
       - name: Log in to Azure CLI
         uses: azure/login@v1
