@@ -48,6 +48,7 @@ jobs:
 
       - name: Prepare WebJob ZIP
         run: |
+          ls -la App_Data/jobs/triggered/webjobemailsearch/
           mkdir -p webjobemailsearch
           cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
           cp -r App_Data/jobs/triggered/webjobemailsearch/src webjobemailsearch/
