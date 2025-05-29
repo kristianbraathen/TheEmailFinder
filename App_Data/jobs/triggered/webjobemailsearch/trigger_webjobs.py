@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 import requests
 import os
 
-trigger_webjobs_bp = Blueprint("trigger_webjobs", __name__)
+trigger_webjobs = Blueprint("trigger_webjobs", __name__)
 
 WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch/run"
 
