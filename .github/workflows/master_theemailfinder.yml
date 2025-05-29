@@ -48,10 +48,10 @@ jobs:
 
       - name: Prepare WebJob ZIP structure
         run: |
-          mkdir -p webjobemailsearch
-          cp run_email_search.py webjobemailsearch/
-          cp -r src webjobemailsearch/
-          cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
+            mkdir -p webjobemailsearch
+            cp run_email_search.py webjobemailsearch/
+            cp -r src webjobemailsearch/
+            cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
 
       - name: Log in to Azure CLI
         uses: azure/login@v1
