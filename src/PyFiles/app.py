@@ -12,6 +12,7 @@ from .ExcelHandler import upload_blueprint
 from .DbToExcel import download_blueprint
 from .GoogleKse import api6_blueprint
 from .SearchResultHandler import email_result_blueprint
+from .trigger_webjobs import trigger_webjobs
 
 
 # Global UnicodeDecodeError handling
@@ -65,7 +66,7 @@ app.register_blueprint(api4_blueprint, url_prefix="/SeleniumScrap")
 app.register_blueprint(upload_blueprint, url_prefix="/ExcelHandler")
 app.register_blueprint(download_blueprint, url_prefix="/DbToExcel")
 app.register_blueprint(email_result_blueprint, url_prefix="/SearchResultHandler")
-
+app.register_blueprint(trigger_webjobs, url_prefix="/trigger_webjobs")
 
 @app.route("/")
 def home():
