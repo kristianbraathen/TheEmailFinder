@@ -11,7 +11,7 @@ WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
 
 STOP_FLAG_FILE = "/app/stop_webjob.flag"  # <-- Endre hvis nødvendig
 
-@trigger_webjobs_bp.route("/start", methods=["POST"])
+@trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
     try:
         # Slett gammelt stoppflagg først (start ny runde)
@@ -26,7 +26,7 @@ def trigger_webjob_start():
     except Exception as e:
         return jsonify({"status": "Feil under start", "details": str(e)}), 500
 
-@trigger_webjobs_bp.route("/stop", methods=["POST"])
+@trigger_webjobs.route("/stop", methods=["POST"])
 def trigger_webjob_stop():
     try:
         with open(STOP_FLAG_FILE, "w") as f:
