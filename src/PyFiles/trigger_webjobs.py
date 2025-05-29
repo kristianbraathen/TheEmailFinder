@@ -19,12 +19,22 @@ def trigger_webjob_start():
             os.remove(STOP_FLAG_FILE)
 
         response = requests.post(WEBJOBS_BASE_URL, auth=(WEBJOBS_USER, WEBJOBS_PASS))
+        print("➡️ Statuskode:", response.status_code)
+        print("➡️ Respons:", response.text)
+
         if response.status_code == 202:
             return jsonify({"status": "WebJob startet"}), 202
         else:
-            return jsonify({"status": "Feil ved start", "details": response.text}), 500
+            return jsonify({
+                "status": "Feil ved start",
+                "status_code": response.status_code,
+                "details": response.text
+            }), 500
     except Exception as e:
-        return jsonify({"status": "Feil under start", "details": str(e)}), 500
+        return jsonify({
+            "status": "Feil under start",
+            "details": str(e)
+        }), 500
 
 @trigger_webjobs.route("/stop", methods=["POST"])
 def trigger_webjob_stop():
