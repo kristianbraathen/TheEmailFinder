@@ -46,9 +46,12 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Create WebJob ZIP
+      - name: Prepare WebJob ZIP structure
         run: |
-          zip -r webjobemailsearch.zip App_Data
+          mkdir -p webjobemailsearch
+          cp run_email_search.py webjobemailsearch/
+          cp -r src webjobemailsearch/
+          cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
 
       - name: Log in to Azure CLI
         uses: azure/login@v1
@@ -74,7 +77,8 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         run: |
-            curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-                --data-binary @"webjobemailsearch.zip" \
-                -H "Content-Type: application/zip" \
-                https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch
+          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+              --data-binary @"webjobemailsearch.zip" \
+              -H "Content-Type: application/zip" \
+              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch
+
