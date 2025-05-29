@@ -49,7 +49,7 @@ jobs:
       - name: Prepare WebJob ZIP structure
         run: |
             mkdir -p webjobemailsearch
-            cp run_email_search.py webjobemailsearch/
+            cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
             cp -r src webjobemailsearch/
             cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
 
