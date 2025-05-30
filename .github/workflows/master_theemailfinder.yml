@@ -81,5 +81,5 @@ jobs:
           curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
               --data-binary @"webjobemailsearch.zip" \
               -H "Content-Type: application/zip" \
-              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch
+              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/
 
