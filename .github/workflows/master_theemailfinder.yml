@@ -49,15 +49,27 @@ jobs:
       - name: Prepare WebJob ZIP
         run: |
           echo "Creating WebJob directory structure..."
+          rm -rf webjobemailsearch
           mkdir -p webjobemailsearch/src/PyFiles
           
           echo "Copying WebJob files..."
           # Copy root level files
           cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
           cp App_Data/jobs/triggered/webjobemailsearch/requirements.txt webjobemailsearch/
+          cp App_Data/jobs/triggered/webjobemailsearch/test.py webjobemailsearch/
+          cp App_Data/jobs/triggered/webjobemailsearch/settings.job webjobemailsearch/
+          cp App_Data/jobs/triggered/webjobemailsearch/run.cmd webjobemailsearch/
           
-          # Copy PyFiles
-          cp App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/*.py webjobemailsearch/src/PyFiles/
+          # Copy PyFiles with verbose output
+          echo "Copying PyFiles directory contents..."
+          cp -v App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/*.py webjobemailsearch/src/PyFiles/
+          
+          echo "Setting file permissions..."
+          chmod -R 755 webjobemailsearch
+          
+          echo "Verifying directory structure..."
+          ls -la webjobemailsearch/
+          ls -la webjobemailsearch/src/PyFiles/
           
           echo "Creating ZIP file..."
           cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
@@ -89,9 +101,11 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         run: |
+          echo "Uploading WebJob ZIP to Kudu..."
           curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
               --data-binary @"webjobemailsearch.zip" \
               -H "Content-Type: application/zip" \
+              -v \
               https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/
 
       - name: Wait for Azure to process changes
