@@ -87,19 +87,43 @@ jobs:
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --settings DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }}
 
-      - name: Upload WebJob ZIP via Kudu API
+      - name: Upload WebJob files
         run: |
-          echo "Uploading WebJob ZIP to Kudu..."
-          # First, try to delete the existing directory
+          echo "Removing old src directory..."
           curl -X DELETE -u "$DEPLOY_USER:$DEPLOY_PASS" \
-              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/
-          
-          # Then upload the new ZIP
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/
+
+          echo "Creating new src directory structure..."
           curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-              --data-binary @"webjobemailsearch.zip" \
-              -H "Content-Type: application/zip" \
-              -v \
-              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/ \
+            -H "Content-Type: application/json" \
+            -d "{}"
+
+          echo "Uploading PyFiles..."
+          for file in App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/*.py; do
+            filename=$(basename "$file")
+            echo "Uploading $filename..."
+            curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+              --data-binary @"$file" \
+              -H "Content-Type: application/octet-stream" \
+              "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/$filename"
+          done
+
+          echo "Uploading other WebJob files..."
+          for file in App_Data/jobs/triggered/webjobemailsearch/*.{py,txt,job,cmd}; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "Uploading $filename..."
+              curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+                --data-binary @"$file" \
+                -H "Content-Type: application/octet-stream" \
+                "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/$filename"
+            fi
+          done
+
+          echo "Deployment complete. Verifying structure..."
+          curl -u "$DEPLOY_USER:$DEPLOY_PASS" \
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/
 
       - name: Wait for Azure to process changes
         run: |
