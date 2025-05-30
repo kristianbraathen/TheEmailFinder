@@ -14,7 +14,7 @@ from threading import Lock
 import threading
 import chromedriver_autoinstaller
 import os
-from .Db import db  # for SQLAlchemy session
+from src.PyFiles.Db import db # for SQLAlchemy session
 
 # Flask blueprint og CORS
 api6_blueprint = Blueprint('api6', __name__)
