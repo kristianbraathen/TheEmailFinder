@@ -87,8 +87,9 @@ jobs:
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --settings \
               DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }} \
-              WEBJOBS_USER=${{ secrets.DEPLOY_USER }} \
-              WEBJOBS_PASS=${{ secrets.DEPLOY_PASS }}
+              AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+              AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }} \
+              AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
 
       - name: Upload WebJob files
         run: |

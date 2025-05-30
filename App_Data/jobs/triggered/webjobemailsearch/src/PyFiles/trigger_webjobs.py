@@ -1,15 +1,17 @@
 from flask import jsonify, Blueprint
 import requests
 import os
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.web import WebSiteManagementClient
 import json
 
 trigger_webjobs = Blueprint("trigger_webjobs", __name__)
 
-WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch/run"
-
-# Get credentials from environment variables
-WEBJOBS_USER = os.getenv("WEBJOBS_USER") or os.getenv("DEPLOY_USER")
-WEBJOBS_PASS = os.getenv("WEBJOBS_PASS") or os.getenv("DEPLOY_PASS")
+# Azure resource details
+SUBSCRIPTION_ID = os.getenv('AZURE_SUBSCRIPTION_ID')
+RESOURCE_GROUP = 'theemailfinder'
+WEBAPP_NAME = 'theemailfinder'
+WEBJOB_NAME = 'webjobemailsearch'
 
 # Use the WebJob's directory for the flag file
 WEBJOB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -18,16 +20,8 @@ STOP_FLAG_FILE = os.path.join(WEBJOB_ROOT, "stop_webjob.flag")
 @trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
     try:
-        # Log credentials status (without exposing them)
-        print(f"Checking credentials - User exists: {bool(WEBJOBS_USER)}, Pass exists: {bool(WEBJOBS_PASS)}")
+        print("Starting WebJob using Azure Management API...")
         
-        if not WEBJOBS_USER or not WEBJOBS_PASS:
-            return jsonify({
-                "status": "Feil ved start",
-                "details": "Missing WebJob credentials",
-                "status_code": 500
-            }), 500
-
         # Delete old stop flag first
         if os.path.exists(STOP_FLAG_FILE):
             try:
@@ -36,48 +30,29 @@ def trigger_webjob_start():
             except Exception as e:
                 print(f"Warning: Could not remove stop flag: {e}")
 
-        print(f"Attempting to start WebJob at: {WEBJOBS_BASE_URL}")
-        response = requests.post(
-            WEBJOBS_BASE_URL, 
-            auth=(WEBJOBS_USER, WEBJOBS_PASS),
-            headers={'Content-Type': 'application/json'}
+        # Get Azure token
+        credential = DefaultAzureCredential()
+        web_client = WebSiteManagementClient(credential, SUBSCRIPTION_ID)
+
+        # Trigger WebJob
+        print(f"Triggering WebJob {WEBJOB_NAME} in {WEBAPP_NAME}")
+        result = web_client.web_apps.run_triggered_web_job(
+            resource_group_name=RESOURCE_GROUP,
+            name=WEBAPP_NAME,
+            web_job_name=WEBJOB_NAME
         )
-        
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Headers: {dict(response.headers)}")
-        print(f"Response Text: {response.text}")
 
-        try:
-            response_json = response.json() if response.text else {}
-            print(f"Response JSON: {response_json}")
-        except json.JSONDecodeError:
-            print("Response was not JSON format")
-            response_json = {}
-
-        if response.status_code in [200, 202]:
-            return jsonify({
-                "status": "WebJob startet",
-                "details": response_json,
-                "status_code": response.status_code
-            }), 200
-        else:
-            return jsonify({
-                "status": "Feil ved start",
-                "details": response.text,
-                "status_code": response.status_code
-            }), 500
-            
-    except requests.exceptions.RequestException as e:
-        print(f"Network error: {str(e)}")
+        print(f"WebJob trigger result: {result}")
         return jsonify({
-            "status": "Nettverksfeil",
-            "details": str(e),
-            "status_code": 500
-        }), 500
+            "status": "WebJob startet",
+            "details": "WebJob trigger request sent successfully",
+            "status_code": 200
+        }), 200
+
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
+        print(f"Error triggering WebJob: {str(e)}")
         return jsonify({
-            "status": "Uventet feil",
+            "status": "Feil ved start",
             "details": str(e),
             "status_code": 500
         }), 500
