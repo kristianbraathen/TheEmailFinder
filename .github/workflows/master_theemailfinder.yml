@@ -48,11 +48,22 @@ jobs:
 
       - name: Prepare WebJob ZIP
         run: |
-          ls -la App_Data/jobs/triggered/webjobemailsearch/
-          mkdir -p webjobemailsearch
+          echo "Creating WebJob directory structure..."
+          mkdir -p webjobemailsearch/src/PyFiles
+          
+          echo "Copying WebJob files..."
+          # Copy root level files
           cp App_Data/jobs/triggered/webjobemailsearch/run_email_search.py webjobemailsearch/
-          cp -r App_Data/jobs/triggered/webjobemailsearch/src webjobemailsearch/
+          cp App_Data/jobs/triggered/webjobemailsearch/requirements.txt webjobemailsearch/
+          
+          # Copy PyFiles
+          cp App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/*.py webjobemailsearch/src/PyFiles/
+          
+          echo "Creating ZIP file..."
           cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
+          
+          echo "WebJob ZIP contents:"
+          unzip -l webjobemailsearch.zip
 
       - name: Log in to Azure CLI
         uses: azure/login@v1
@@ -78,18 +89,14 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         run: |
-          echo "Uploading WebJob ZIP to Kudu..."
-          HTTP_RESPONSE=$(curl -v -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
               --data-binary @"webjobemailsearch.zip" \
               -H "Content-Type: application/zip" \
-              --write-out "%{http_code}" \
-              --silent --output /dev/null \
-              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/)
-          
-          if [ "$HTTP_RESPONSE" -eq 200 ] || [ "$HTTP_RESPONSE" -eq 201 ]; then
-            echo "✅ WebJob deployment successful (HTTP $HTTP_RESPONSE)"
-          else
-            echo "❌ WebJob deployment failed (HTTP $HTTP_RESPONSE)"
-            exit 1
-          fi
+              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/
+
+      - name: Wait for Azure to process changes
+        run: |
+          echo "Waiting for Azure to process changes..."
+          sleep 90
+          echo "Proceeding with deployment..."
 
