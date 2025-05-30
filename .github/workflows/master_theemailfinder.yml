@@ -121,6 +121,17 @@ jobs:
             fi
           done
 
+          echo "Setting execute permissions..."
+          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+            -H "Content-Type: application/json" \
+            -d '{"executable": true}' \
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/run.cmd
+
+          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+            -H "Content-Type: application/json" \
+            -d '{"executable": true}' \
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/setup.cmd
+
           echo "Deployment complete. Verifying structure..."
           curl -u "$DEPLOY_USER:$DEPLOY_PASS" \
             https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/

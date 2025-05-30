@@ -9,7 +9,9 @@ WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.az
 WEBJOBS_USER = os.getenv("WEBJOBS_USER")
 WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
 
-STOP_FLAG_FILE = "/app/stop_webjob.flag"  # <-- Endre hvis nødvendig
+# Use the WebJob's directory for the flag file
+WEBJOB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+STOP_FLAG_FILE = os.path.join(WEBJOB_ROOT, "stop_webjob.flag")  # This will be in the WebJob's root directory
 
 @trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
