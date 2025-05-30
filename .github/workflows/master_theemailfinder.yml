@@ -78,8 +78,18 @@ jobs:
 
       - name: Upload WebJob ZIP via Kudu API
         run: |
-          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
+          echo "Uploading WebJob ZIP to Kudu..."
+          HTTP_RESPONSE=$(curl -v -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
               --data-binary @"webjobemailsearch.zip" \
               -H "Content-Type: application/zip" \
-              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/
+              --write-out "%{http_code}" \
+              --silent --output /dev/null \
+              https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/zip/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/)
+          
+          if [ "$HTTP_RESPONSE" -eq 200 ] || [ "$HTTP_RESPONSE" -eq 201 ]; then
+            echo "✅ WebJob deployment successful (HTTP $HTTP_RESPONSE)"
+          else
+            echo "❌ WebJob deployment failed (HTTP $HTTP_RESPONSE)"
+            exit 1
+          fi
 
