@@ -85,7 +85,10 @@ jobs:
           az webapp config appsettings set \
             --resource-group theemailfinder \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --settings DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }}
+            --settings \
+              DATABASE_CONNECTION_STRING=${{ secrets.DATABASE_CONNECTION_STRING }} \
+              WEBJOBS_USER=${{ secrets.DEPLOY_USER }} \
+              WEBJOBS_PASS=${{ secrets.DEPLOY_PASS }}
 
       - name: Upload WebJob files
         run: |
