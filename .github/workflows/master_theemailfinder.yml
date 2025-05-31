@@ -93,6 +93,10 @@ jobs:
 
       - name: Upload WebJob files
         run: |
+          echo "Cleaning up old files..."
+          curl -X DELETE -u "$DEPLOY_USER:$DEPLOY_PASS" \
+            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/run_webjob.py
+
           echo "Removing old src directory..."
           curl -X DELETE -u "$DEPLOY_USER:$DEPLOY_PASS" \
             https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/

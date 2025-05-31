@@ -22,7 +22,7 @@ api6_blueprint = Blueprint('api6', __name__)
 CORS(api6_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
 process_lock = Lock()
-process_running = False
+process_running = True  # Changed to True by default
 
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
@@ -94,11 +94,12 @@ def search_emails_and_display(batch_size=5, force_run=False):
         last_id = 0
         
         while True:
-            if not process_running and not force_run:
+            # Only check process_running if not force_run
+            if not force_run and not process_running:
                 print("🔴 Prosessen er stoppet av brukeren.")
                 break
 
-            # Sjekk stoppflagget på disk
+            # Always check stop flag, regardless of force_run
             if os.path.exists(STOP_FLAG_FILE):
                 print("🔴 Stoppflagg oppdaget på disk. Avslutter prosess.")
                 process_running = False
@@ -123,13 +124,14 @@ def search_emails_and_display(batch_size=5, force_run=False):
             print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
 
             for row in rows:
-                # Sjekk stoppflagget også her for tidlig avbrudd
+                # Always check stop flag
                 if os.path.exists(STOP_FLAG_FILE):
                     print("🔴 Stoppflagg oppdaget under batch-prosessering. Avslutter prosess.")
                     process_running = False
                     break
 
-                if not process_running:
+                # Only check process_running if not force_run
+                if not force_run and not process_running:
                     print("🔴 Prosessen er stoppet av brukeren.")
                     break
 
@@ -142,11 +144,13 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 search_results = google_custom_search(search_query)
                 all_emails = []
                 for url in search_results:
+                    # Always check stop flag
                     if os.path.exists(STOP_FLAG_FILE):
                         print("🔴 Stoppflagg oppdaget under url-prosessering. Avslutter prosess.")
                         process_running = False
                         break
-                    if not process_running:
+                    # Only check process_running if not force_run
+                    if not force_run and not process_running:
                         print("🔴 Prosessen er stoppet av brukeren.")
                         break
                     print(f"🌐 Extracting emails from URL: {url}")
@@ -169,7 +173,8 @@ def search_emails_and_display(batch_size=5, force_run=False):
 
                 last_id = row_id
 
-            if not process_running:
+            # Only check process_running if not force_run
+            if not force_run and not process_running:
                 print("🔴 Exiting loop as process_running is False.")
                 break
 
@@ -199,7 +204,7 @@ def start_process_google():
             try:
                 with app.app_context(): 
                     print("🔵 background_search() started.")
-                    result = search_emails_and_display()
+                    result = search_emails_and_display(force_run=True)  # Added force_run=True
                     if result:
                         print("✅ background_search() completed successfully.")
                     else:

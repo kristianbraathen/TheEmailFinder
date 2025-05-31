@@ -15,7 +15,7 @@ import threading
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 process_lock = Lock()
-process_running = False
+process_running = True  # Changed to True by default
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
 chromedriver_autoinstaller.install()
@@ -67,7 +67,7 @@ def extract_email_selenium(url):
         print(f"Feil ved uthenting av e-post fra {url}: {e}")
         return []
 
-def search_emails_and_display(batch_size=5):
+def search_emails_and_display(batch_size=5, force_run=False):
     global process_running
     try:
         print(f"🔵 process_running is {process_running}")
@@ -76,6 +76,11 @@ def search_emails_and_display(batch_size=5):
         last_id = 0
         
         while True:
+            # Only check process_running if not force_run
+            if not force_run and not process_running:
+                print("🔴 Prosessen er stoppet av brukeren.")
+                break
+
             print(f"🟡 Fetching batch starting from last_id: {last_id}")
             
             # Bruker SQLAlchemy tekst-spørring med korrekt PostgreSQL-syntaks
@@ -96,7 +101,8 @@ def search_emails_and_display(batch_size=5):
             print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
 
             for row in rows:
-                if not process_running:
+                # Only check process_running if not force_run
+                if not force_run and not process_running:
                     print("🔴 Prosessen er stoppet av brukeren.")
                     break
 
@@ -109,7 +115,8 @@ def search_emails_and_display(batch_size=5):
                 search_results = google_custom_search(search_query)
                 all_emails = []
                 for url in search_results:
-                    if not process_running:
+                    # Only check process_running if not force_run
+                    if not force_run and not process_running:
                         print("🔴 Prosessen er stoppet av brukeren.")
                         break
                     print(f"🌐 Extracting emails from URL: {url}")
@@ -132,7 +139,8 @@ def search_emails_and_display(batch_size=5):
 
                 last_id = row_id
 
-            if not process_running:
+            # Only check process_running if not force_run
+            if not force_run and not process_running:
                 print("🔴 Exiting loop as process_running is False.")
                 break
 
@@ -161,7 +169,7 @@ def start_process_1881():
             try:
                 with app.app_context(): 
                     print("🔵 background_search() started.")
-                    result = search_emails_and_display()
+                    result = search_emails_and_display(force_run=True)  # Added force_run=True
                     if result:
                         print("✅ background_search() completed successfully.")
                     else:

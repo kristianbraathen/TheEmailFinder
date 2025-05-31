@@ -120,7 +120,7 @@ def main():
             batch_size = 5
             while not should_exit and not check_stop_flag():
                 try:
-                    success = search_emails_and_display(batch_size=batch_size)
+                    success = search_emails_and_display(batch_size=batch_size, force_run=True)
                     if not success:
                         log("⚠️ Batch processing returned False, stopping...")
                         break
