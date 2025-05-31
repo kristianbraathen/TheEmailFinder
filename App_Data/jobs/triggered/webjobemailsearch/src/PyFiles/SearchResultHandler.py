@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlalchemy.ext.declarative import declarative_base
 from .Db import db,get_db_connection
 import psycopg2
+import logging
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
@@ -217,5 +218,21 @@ def update_email():
     except Exception as e:
         print(f"Feil ved oppdatering/sletting: {e}")  # Logg feilen
         return jsonify({'error': 'Intern feil', 'details': str(e)}), 500
+
+class SearchResultHandler:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.process_running = True
+        
+    def process_record(self, record):
+        if not self.process_running:
+            self.logger.info("[STOP] Process stopped by user")
+            return False
+            
+        # ... existing code ...
+        
+    def stop(self):
+        self.process_running = False
+        self.logger.info("[STOP] Process stopped by user")
 
 

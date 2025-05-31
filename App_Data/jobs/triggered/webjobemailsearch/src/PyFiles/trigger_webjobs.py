@@ -17,11 +17,52 @@ WEBJOB_NAME = 'webjobemailsearch'
 WEBJOB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 STOP_FLAG_FILE = os.path.join(WEBJOB_ROOT, "stop_webjob.flag")
 
+def get_webjob_status():
+    try:
+        credential = DefaultAzureCredential()
+        web_client = WebSiteManagementClient(credential, SUBSCRIPTION_ID)
+        
+        # Get WebJob status
+        webjob = web_client.web_apps.list_triggered_web_job_histories(
+            resource_group_name=RESOURCE_GROUP,
+            name=WEBAPP_NAME,
+            web_job_name=WEBJOB_NAME
+        )
+        
+        # Convert to list to get the most recent run
+        runs = list(webjob)
+        if runs:
+            latest_run = runs[-1]
+            return {
+                "status": latest_run.status,
+                "start_time": latest_run.start_time,
+                "end_time": latest_run.end_time,
+                "duration": latest_run.duration
+            }
+        return {"status": "No runs found"}
+    except Exception as e:
+        print(f"Error getting WebJob status: {str(e)}")
+        return {"status": "Error", "details": str(e)}
+
+@trigger_webjobs.route("/status", methods=["GET"])
+def get_status():
+    status = get_webjob_status()
+    return jsonify(status)
+
 @trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
     try:
         print("Starting WebJob using Azure Management API...")
         
+        # Check current status
+        status = get_webjob_status()
+        if status.get("status") == "Running":
+            return jsonify({
+                "status": "Already Running",
+                "details": status,
+                "status_code": 400
+            }), 400
+
         # Delete old stop flag first
         if os.path.exists(STOP_FLAG_FILE):
             try:
@@ -60,9 +101,26 @@ def trigger_webjob_start():
 @trigger_webjobs.route("/stop", methods=["POST"])
 def trigger_webjob_stop():
     try:
+        # First check if it's actually running
+        status = get_webjob_status()
+        if status.get("status") != "Running":
+            return jsonify({
+                "status": "Not Running",
+                "details": status,
+                "status_code": 400
+            }), 400
+
+        # Set the stop flag
         with open(STOP_FLAG_FILE, "w") as f:
             f.write("STOP")
-        return jsonify({"status": "Stoppflagg satt – WebJob bør avslutte snart"}), 200
+        
+        return jsonify({
+            "status": "Stoppflagg satt – WebJob bør avslutte snart",
+            "current_status": status
+        }), 200
     except Exception as e:
         print(f"Error setting stop flag: {e}")
-        return jsonify({"status": "Kunne ikke skrive stoppflagg", "details": str(e)}), 500
+        return jsonify({
+            "status": "Kunne ikke skrive stoppflagg", 
+            "details": str(e)
+        }), 500

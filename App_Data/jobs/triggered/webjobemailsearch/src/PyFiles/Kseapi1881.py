@@ -157,22 +157,22 @@ def start_process_1881():
         print("Prosess starter...")
 
         def background_search():
-            from src.PyFiles.app import app  # Pass på at dette ikke skaper sirkulær import!
+            from src.PyFiles.app import app
             try:
                 with app.app_context(): 
-                    print("🔵 background_search() started.")
+                    print("🔵 Bakgrunnssøk startet.")
                     result = search_emails_and_display()
                     if result:
-                        print("✅ background_search() completed successfully.")
+                        print("✅ Bakgrunnssøk fullført.")
                     else:
-                        print("⚠️ background_search() encountered an issue.")
+                        print("⚠️ Bakgrunnssøk møtte et problem.")
             except Exception as e:
-                print(f"❌ Feil ved prosessstart i background_search(): {str(e)}")
+                print(f"❌ Feil ved prosessstart i bakgrunnssøk: {str(e)}")
             finally:
                 global process_running
                 with process_lock:
                     process_running = False
-                print("🔴 background_search() finished. process_running set to False.")
+                print("🔴 Bakgrunnssøk avsluttet. process_running satt til False.")
 
         threading.Thread(target=background_search, daemon=True).start()
 
@@ -183,12 +183,12 @@ def stop_process_1881():
     global process_running
     with process_lock:
         if not process_running:
-            return jsonify({"status": "Process was not running (already stopped)."}), 200
+            return jsonify({"status": "Prosessen var ikke i gang (allerede stoppet)."}), 200
         try:
             process_running = False
             print("Prosessen er stoppet.")
-            return jsonify({"status": "Process stopped successfully."}), 200
+            return jsonify({"status": "Prosessen er stoppet."}), 200
         except Exception as e:
             process_running = True
             print(f"Feil ved stopp prosess: {str(e)}")
-            return jsonify({"status": f"Error stopping process: {str(e)}"}), 500
+            return jsonify({"status": f"Feil ved stopp av prosess: {str(e)}"}), 500

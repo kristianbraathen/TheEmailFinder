@@ -1,7 +1,7 @@
 import time
 import requests
 import re
-from flask import Blueprint, jsonify, request,current_app
+from flask import Blueprint, jsonify, request, current_app
 from flask_cors import CORS
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -15,6 +15,7 @@ import threading
 import chromedriver_autoinstaller
 import os
 from src.PyFiles.Db import db # for SQLAlchemy session
+import logging
 
 # Flask blueprint og CORS
 api6_blueprint = Blueprint('api6', __name__)
@@ -84,7 +85,7 @@ def extract_email_selenium(url):
 
 STOP_FLAG_FILE = "/app/stop_webjob.flag"
 
-def search_emails_and_display(batch_size=5):
+def search_emails_and_display(batch_size=5, force_run=False):
     global process_running
     try:
         print(f"🔵 process_running is {process_running}")
@@ -93,6 +94,10 @@ def search_emails_and_display(batch_size=5):
         last_id = 0
         
         while True:
+            if not process_running and not force_run:
+                print("🔴 Prosessen er stoppet av brukeren.")
+                break
+
             # Sjekk stoppflagget på disk
             if os.path.exists(STOP_FLAG_FILE):
                 print("🔴 Stoppflagg oppdaget på disk. Avslutter prosess.")
@@ -226,3 +231,18 @@ def stop_process_google():
             process_running = True
             print(f"Feil ved stopp prosess: {str(e)}")
             return jsonify({"status": f"Feil ved stopp: {str(e)}"}), 500
+
+class GoogleKse:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.process_running = True
+        
+    def stop(self):
+        self.process_running = False
+        self.logger.info("[STOP] Prosessen er stoppet av brukeren")
+        
+    def check_stop(self):
+        if not self.process_running:
+            self.logger.info("[STOP] Prosessen er stoppet av brukeren")
+            return True
+        return False

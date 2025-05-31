@@ -1,14 +1,23 @@
-@echo on
+@echo off
+echo Starting WebJob execution...
+
+IF EXIST "%PYTHON_EXE%" (
+    echo Using Python from: %PYTHON_EXE%
+) ELSE (
+    echo Python not found at %PYTHON_EXE%, using system Python
+    set PYTHON_EXE=python
+)
+
 echo Current directory: %CD%
-echo Python path: %PATH%
-echo Listing directory contents:
+echo Directory contents:
 dir
-echo.
-echo Running Python script...
-python -V
-python run_email_search.py 2>> webjob_error.log
-if %ERRORLEVEL% NEQ 0 (
-    echo Error running script. Check webjob_error.log for details.
+
+echo Running WebJob...
+%PYTHON_EXE% run_webjob.py
+
+IF %ERRORLEVEL% NEQ 0 (
+    echo WebJob failed with error code %ERRORLEVEL%
     exit /b %ERRORLEVEL%
-) 
-python test_run.py > webjob.log 2>&1 
+)
+
+echo WebJob completed successfully 
