@@ -17,9 +17,24 @@ api3_blueprint = Blueprint('api3', __name__)
 CORS(api3_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
 process_lock = Lock()
-kse_api = None  # Will hold our singleton instance
+_instance = None  # Singleton instance
 
 STOP_FLAG_FILE = "/app/stop_webjob.flag"
+
+# CSE Configuration
+API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
+CSE_ID = "05572ab81b7254d58"
+
+def google_custom_search(query):
+    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=3"
+    response = requests.get(url)
+    if response.status_code == 200:
+        search_results = response.json()
+        results = [item["link"] for item in search_results.get("items", [])]
+        return results
+    else:
+        print(f"Feil ved Google API: {response.status_code} - {response.text}")
+        return []
 
 class KseApi:
     def __init__(self):
@@ -36,6 +51,13 @@ class KseApi:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-extensions")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
+        
+    @classmethod
+    def get_instance(cls):
+        global _instance
+        if _instance is None:
+            _instance = cls()
+        return _instance
         
     def stop(self):
         self.process_running = False
@@ -78,15 +100,66 @@ def search_emails_and_display(kse_api, batch_size=5, force_run=False):
 
             kse_api.logger.info(f"🟡 Fetching batch starting from last_id: {last_id}")
             
-            # Process batch here...
-            # Your existing batch processing code would go here
-            
-            # Example of how to use check_stop in a loop:
-            for item in items:
+            # Get batch of records to process
+            query = text(f"""
+                SELECT id, "Org_nr", "Firmanavn"
+                FROM imported_table
+                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
+                ORDER BY id ASC
+                LIMIT :limit
+            """)
+            result = db.session.execute(query, {"last_id": last_id, "limit": batch_size})
+            rows = result.fetchall()
+
+            if not rows:
+                kse_api.logger.info("✅ No more records to process. Exiting loop.")
+                break
+
+            kse_api.logger.info(f"🟡 Processing batch of {len(rows)} records (last_id: {last_id}).")
+
+            for row in rows:
                 if kse_api.check_stop(force_run):
                     break
-                # Process item...
-            
+
+                row_id, org_nr, company_name = row
+                kse_api.logger.info(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
+
+                search_query = f'"{company_name}" "Norge"'
+                kse_api.logger.info(f"🔍 Searching with query: {search_query}")
+
+                search_results = google_custom_search(search_query)
+                all_emails = []
+                
+                for url in search_results:
+                    if kse_api.check_stop(force_run):
+                        break
+                    kse_api.logger.info(f"🌐 Extracting emails from URL: {url}")
+                    try:
+                        driver = webdriver.Chrome(service=chrome_service, options=kse_api.chrome_options)
+                        driver.get(url)
+                        page_source = driver.page_source
+                        emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
+                        all_emails.extend(emails)
+                        driver.quit()
+                    except Exception as e:
+                        kse_api.logger.error(f"❌ Error extracting emails from {url}: {str(e)}")
+
+                unique_emails = set(all_emails)
+                email_list = list(unique_emails)
+
+                if email_list:
+                    kse_api.logger.info(f"📧 Found emails: {email_list}")
+                    for email in email_list:
+                        insert_query = text("""
+                            INSERT INTO search_results ("Org_nr", company_name, email)
+                            VALUES (:org_nr, :company_name, :email)
+                        """)
+                        db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
+                    db.session.commit()
+                    kse_api.logger.info(f"✅ Emails inserted into database for org_nr: {org_nr}")
+
+                last_id = row_id
+
         kse_api.logger.info("✅ search_emails_and_display() completed.")
         return True
 
@@ -96,46 +169,46 @@ def search_emails_and_display(kse_api, batch_size=5, force_run=False):
 
 @api3_blueprint.route('/start_process_kse', methods=['POST'])
 def start_process_kse():
-    global kse_api
+    global _instance
     
     with process_lock:
-        if kse_api is None:
-            kse_api = KseApi()
-        elif kse_api.process_running:
+        if _instance is None:
+            _instance = KseApi()
+        elif _instance.process_running:
             return jsonify({"status": "Process is already running"}), 400
 
-        kse_api.start()
+        _instance.start()
         
         def background_search():
             try:
                 with current_app.app_context():
-                    kse_api.logger.info("[START] Background search started")
-                    result = search_emails_and_display(kse_api, force_run=True)  # Added force_run=True
+                    _instance.logger.info("[START] Background search started")
+                    result = search_emails_and_display(_instance, force_run=True)  # Added force_run=True
                     if result:
-                        kse_api.logger.info("[SUCCESS] Background search completed successfully")
+                        _instance.logger.info("[SUCCESS] Background search completed successfully")
                     else:
-                        kse_api.logger.warning("[WARNING] Background search encountered an issue")
+                        _instance.logger.warning("[WARNING] Background search encountered an issue")
             except Exception as e:
-                kse_api.logger.error(f"[ERROR] Error in background search: {str(e)}")
+                _instance.logger.error(f"[ERROR] Error in background search: {str(e)}")
             finally:
                 with process_lock:
-                    kse_api.stop()
+                    _instance.stop()
 
         threading.Thread(target=background_search, daemon=True).start()
         return jsonify({"status": "Process started and running in background"}), 200
 
 @api3_blueprint.route('/stop_process_kse', methods=['POST'])
 def stop_process_kse():
-    global kse_api
+    global _instance
     
     with process_lock:
-        if kse_api is None or not kse_api.process_running:
+        if _instance is None or not _instance.process_running:
             return jsonify({"status": "Process was not running"}), 200
 
         try:
-            kse_api.stop()
+            _instance.stop()
             return jsonify({"status": "Process stopped"}), 200
         except Exception as e:
-            kse_api.logger.error(f"[ERROR] Error stopping process: {str(e)}")
+            _instance.logger.error(f"[ERROR] Error stopping process: {str(e)}")
             return jsonify({"status": f"Error stopping process: {str(e)}"}), 500
 

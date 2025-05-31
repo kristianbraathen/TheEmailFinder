@@ -23,6 +23,7 @@ CORS(api6_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeas
 
 process_lock = Lock()
 process_running = True  # Changed to True by default
+_instance = None  # Singleton instance
 
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
@@ -85,24 +86,39 @@ def extract_email_selenium(url):
 
 STOP_FLAG_FILE = "/app/stop_webjob.flag"
 
+class GoogleKse:
+    def __init__(self):
+        self.process_running = True
+        self.logger = logging.getLogger(__name__)
+
+    @classmethod
+    def get_instance(cls):
+        global _instance
+        if _instance is None:
+            _instance = cls()
+        return _instance
+
 def search_emails_and_display(batch_size=5, force_run=False):
     global process_running
+    instance = GoogleKse.get_instance()
+    instance.process_running = True  # Ensure it's True at start
+    
     try:
-        print(f"🔵 process_running is {process_running}")
+        print(f"🔵 process_running is {instance.process_running}")
         print("🔵 search_emails_and_display() started.")
         
         last_id = 0
         
         while True:
             # Only check process_running if not force_run
-            if not force_run and not process_running:
+            if not force_run and not instance.process_running:
                 print("🔴 Prosessen er stoppet av brukeren.")
                 break
 
             # Always check stop flag, regardless of force_run
             if os.path.exists(STOP_FLAG_FILE):
                 print("🔴 Stoppflagg oppdaget på disk. Avslutter prosess.")
-                process_running = False
+                instance.process_running = False
                 break
 
             print(f"🟡 Fetching batch starting from last_id: {last_id}")
@@ -127,11 +143,11 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 # Always check stop flag
                 if os.path.exists(STOP_FLAG_FILE):
                     print("🔴 Stoppflagg oppdaget under batch-prosessering. Avslutter prosess.")
-                    process_running = False
+                    instance.process_running = False
                     break
 
                 # Only check process_running if not force_run
-                if not force_run and not process_running:
+                if not force_run and not instance.process_running:
                     print("🔴 Prosessen er stoppet av brukeren.")
                     break
 
@@ -147,10 +163,10 @@ def search_emails_and_display(batch_size=5, force_run=False):
                     # Always check stop flag
                     if os.path.exists(STOP_FLAG_FILE):
                         print("🔴 Stoppflagg oppdaget under url-prosessering. Avslutter prosess.")
-                        process_running = False
+                        instance.process_running = False
                         break
                     # Only check process_running if not force_run
-                    if not force_run and not process_running:
+                    if not force_run and not instance.process_running:
                         print("🔴 Prosessen er stoppet av brukeren.")
                         break
                     print(f"🌐 Extracting emails from URL: {url}")
@@ -174,7 +190,7 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 last_id = row_id
 
             # Only check process_running if not force_run
-            if not force_run and not process_running:
+            if not force_run and not instance.process_running:
                 print("🔴 Exiting loop as process_running is False.")
                 break
 
@@ -186,17 +202,16 @@ def search_emails_and_display(batch_size=5, force_run=False):
         db.session.rollback()
         return False
 
-
 @api6_blueprint.route('/start_process_google', methods=['POST'])
 def start_process_google():
-    global process_running
+    instance = GoogleKse.get_instance()
 
     with process_lock:
-        if process_running:
+        if instance.process_running:
             return jsonify({"status": "Prosess kjører allerede"}), 400
 
-        process_running = True
-        print(f"🔵 process_running is {process_running}")
+        instance.process_running = True
+        print(f"🔵 process_running is {instance.process_running}")
         print("Prosess starter...")
 
         def background_search():
@@ -212,9 +227,8 @@ def start_process_google():
             except Exception as e:
                 print(f"❌ Feil ved prosessstart i background_search(): {str(e)}")
             finally:
-                global process_running
                 with process_lock:
-                    process_running = False
+                    instance.process_running = False
                 print("🔴 background_search() finished. process_running set to False.")
 
         threading.Thread(target=background_search, daemon=True).start()
@@ -223,31 +237,16 @@ def start_process_google():
 
 @api6_blueprint.route('/stop_process_google', methods=['POST'])
 def stop_process_google():
-    global process_running
+    instance = GoogleKse.get_instance()
+    
     with process_lock:
-        if not process_running:
-            return jsonify({"status": "Prosess var ikke i gang (allerede stoppet)."}), 200
-
+        if not instance.process_running:
+            return jsonify({"status": "Process was not running"}), 200
         try:
-            process_running = False
+            instance.process_running = False
             print("Prosessen er stoppet.")
-            return jsonify({"status": "Prosess stoppet."}), 200
+            return jsonify({"status": "Process stopped"}), 200
         except Exception as e:
-            process_running = True
+            instance.process_running = True
             print(f"Feil ved stopp prosess: {str(e)}")
-            return jsonify({"status": f"Feil ved stopp: {str(e)}"}), 500
-
-class GoogleKse:
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.process_running = True
-        
-    def stop(self):
-        self.process_running = False
-        self.logger.info("[STOP] Prosessen er stoppet av brukeren")
-        
-    def check_stop(self):
-        if not self.process_running:
-            self.logger.info("[STOP] Prosessen er stoppet av brukeren")
-            return True
-        return False
+            return jsonify({"status": f"Error stopping process: {str(e)}"}), 500

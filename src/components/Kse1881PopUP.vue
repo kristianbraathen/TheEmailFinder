@@ -27,17 +27,27 @@
         methods: {
             async startProcess() {
                 try {
-                    await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results");
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/start_process");
-                    this.processMessage = response.data.status;
+                    // Steg 1: Klargjør databasen/tabellen for nye resultater
+                    await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results"
+                    );
+
+                    // Steg 2: Start WebJob-en som gjør e-postsøkene
+                    const startResponse = await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start"
+                    );
+
+                    this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
                 } catch (error) {
-                    this.processMessage = "Feil under start av prosess.";
+                    this.processMessage = "Feil under start av prosess/WebJob.";
                     console.error(error);
                 }
             },
             async stopProcess() {
                 try {
-                    const response = await axios.post("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/Kseapi1881/stop_process_1881");
+                    const response = await axios.post(
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/stop"
+                    );
                     this.processMessage = response.data.status;
                 } catch (error) {
                     this.processMessage = "Feil under stopp av prosess.";

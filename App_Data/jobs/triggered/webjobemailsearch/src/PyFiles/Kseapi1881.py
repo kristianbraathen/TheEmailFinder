@@ -11,13 +11,46 @@ from threading import Lock
 import chromedriver_autoinstaller
 import os
 import threading
+import logging
 
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 process_lock = Lock()
-process_running = True
+_instance = None  # Singleton instance
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
+class Kseapi1881:
+    def __init__(self):
+        self.process_running = True
+        self.logger = logging.getLogger(__name__)
+        
+    @classmethod
+    def get_instance(cls):
+        global _instance
+        if _instance is None:
+            _instance = cls()
+        return _instance
+        
+    def start(self):
+        self.process_running = True
+        self.logger.info("[START] Process started")
+        
+    def stop(self):
+        self.process_running = False
+        self.logger.info("[STOP] Process stopped by user")
+        
+    def check_stop(self, force_run=False):
+        if os.path.exists(STOP_FLAG_FILE):
+            self.logger.info("[STOP] Stop flag detected, stopping process")
+            self.process_running = False
+            return True
+            
+        if not force_run and not self.process_running:
+            self.logger.info("[STOP] Process stopped by user")
+            return True
+        return False
+
+# Initialize Chrome options
 chromedriver_autoinstaller.install()
 driver_path = os.getenv('CHROMEDRIVER_PATH') or chromedriver_autoinstaller.install()
 chrome_service = Service(driver_path)
@@ -68,17 +101,16 @@ def extract_email_selenium(url):
         return []
 
 def search_emails_and_display(batch_size=5, force_run=False):
-    global process_running
+    instance = Kseapi1881.get_instance()
     try:
-        print(f"🔵 process_running is {process_running}")
+        print(f"🔵 process_running is {instance.process_running}")
         print("🔵 search_emails_and_display() started.")
         
         last_id = 0
         
         while True:
-            # Only check process_running if not force_run
-            if not force_run and not process_running:
-                print("🔴 Prosessen er stoppet av brukeren.")
+            if instance.check_stop(force_run):
+                print("🔴 Process stopped, exiting...")
                 break
 
             print(f"🟡 Fetching batch starting from last_id: {last_id}")
@@ -102,7 +134,7 @@ def search_emails_and_display(batch_size=5, force_run=False):
 
             for row in rows:
                 # Only check process_running if not force_run
-                if not force_run and not process_running:
+                if not force_run and not instance.process_running:
                     print("🔴 Prosessen er stoppet av brukeren.")
                     break
 
@@ -116,7 +148,7 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 all_emails = []
                 for url in search_results:
                     # Only check process_running if not force_run
-                    if not force_run and not process_running:
+                    if not force_run and not instance.process_running:
                         print("🔴 Prosessen er stoppet av brukeren.")
                         break
                     print(f"🌐 Extracting emails from URL: {url}")
@@ -140,7 +172,7 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 last_id = row_id
 
             # Only check process_running if not force_run
-            if not force_run and not process_running:
+            if not force_run and not instance.process_running:
                 print("🔴 Exiting loop as process_running is False.")
                 break
 
@@ -148,20 +180,20 @@ def search_emails_and_display(batch_size=5, force_run=False):
         return True
 
     except Exception as e:
-        print(f"❌ Feil i search_emails_and_display(): {str(e)}")
+        print(f"❌ Error in search_emails_and_display(): {str(e)}")
         db.session.rollback()
         return False
 
 @api5_blueprint.route('/start_process', methods=['POST'])
 def start_process_1881():
-    global process_running
+    instance = Kseapi1881.get_instance()
 
     with process_lock:
-        if process_running:
+        if instance.process_running:
             return jsonify({"status": "Prosess kjører allerede"}), 400
 
-        process_running = True
-        print(f"🔵 process_running is {process_running}")
+        instance.start()
+        print(f"🔵 process_running is {instance.process_running}")
         print("Prosess starter...")
 
         def background_search():
@@ -177,9 +209,8 @@ def start_process_1881():
             except Exception as e:
                 print(f"❌ Feil ved prosessstart i bakgrunnssøk: {str(e)}")
             finally:
-                global process_running
                 with process_lock:
-                    process_running = False
+                    instance.stop()
                 print("🔴 Bakgrunnssøk avsluttet. process_running satt til False.")
 
         threading.Thread(target=background_search, daemon=True).start()
@@ -188,15 +219,15 @@ def start_process_1881():
 
 @api5_blueprint.route('/stop_process_1881', methods=['POST'])
 def stop_process_1881():
-    global process_running
+    instance = Kseapi1881.get_instance()
+    
     with process_lock:
-        if not process_running:
+        if not instance.process_running:
             return jsonify({"status": "Prosessen var ikke i gang (allerede stoppet)."}), 200
         try:
-            process_running = False
+            instance.stop()
             print("Prosessen er stoppet.")
             return jsonify({"status": "Prosessen er stoppet."}), 200
         except Exception as e:
-            process_running = True
             print(f"Feil ved stopp prosess: {str(e)}")
             return jsonify({"status": f"Feil ved stopp av prosess: {str(e)}"}), 500
