@@ -103,14 +103,22 @@ def run_search_module(search_fn, name, batch_size=5):
     """
     try:
         # Initialize the module if it has get_instance
-        if hasattr(search_fn, 'get_instance'):
-            instance = search_fn.get_instance()
+        instance = None
+        module_name = search_fn.__module__
+        module = sys.modules[module_name]
+        if hasattr(module, 'get_instance'):
+            instance = module.get_instance()
             instance.process_running = True
+            log(f"✅ Initialized instance for {name}")
         
         log(f"🔍 Starting {name} search...")
         
-        # Run the search
-        success = search_fn(batch_size=batch_size, force_run=True)
+        # Run the search with instance if available
+        if instance:
+            success = search_fn(kse_api=instance, batch_size=batch_size, force_run=True)
+        else:
+            success = search_fn(batch_size=batch_size, force_run=True)
+            
         if not success:
             log(f"⚠️ {name} search returned False")
             return False

@@ -12,6 +12,8 @@ import chromedriver_autoinstaller
 import os
 import threading
 import logging
+from sqlalchemy.sql import text
+from src.PyFiles.Db import db
 
 api3_blueprint = Blueprint('api3', __name__)
 CORS(api3_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
@@ -51,12 +53,15 @@ class KseApi:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-extensions")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.start()  # Ensure process is started on initialization
         
     @classmethod
     def get_instance(cls):
         global _instance
         if _instance is None:
             _instance = cls()
+        if not _instance.process_running:
+            _instance.start()  # Ensure process is running when getting instance
         return _instance
         
     def stop(self):
@@ -74,6 +79,11 @@ class KseApi:
         if os.path.exists(STOP_FLAG_FILE):
             self.logger.info("[STOP] Stop flag detected, stopping process")
             self.process_running = False
+            try:
+                os.remove(STOP_FLAG_FILE)  # Clean up the flag file
+                self.logger.info("[STOP] Stop flag removed")
+            except Exception as e:
+                self.logger.warning(f"[STOP] Could not remove stop flag: {e}")
             return True
             
         # Only check process_running if not force_run
@@ -86,12 +96,18 @@ class KseApi:
         self.process_running = True
         self.logger.info("[START] Process started")
 
-def search_emails_and_display(kse_api, batch_size=5, force_run=False):
+def search_emails_and_display(kse_api=None, batch_size=5, force_run=False):
     try:
+        # Initialize KseApi instance if not provided
+        if kse_api is None:
+            kse_api = KseApi.get_instance()
+            kse_api.start()  # Ensure process_running is True
+
         kse_api.logger.info(f"🔵 process_running is {kse_api.process_running}")
         kse_api.logger.info("🔵 search_emails_and_display() started.")
         
         last_id = 0
+        chrome_service = Service(chromedriver_autoinstaller.install())
         
         while True:
             if kse_api.check_stop(force_run):
@@ -101,7 +117,7 @@ def search_emails_and_display(kse_api, batch_size=5, force_run=False):
             kse_api.logger.info(f"🟡 Fetching batch starting from last_id: {last_id}")
             
             # Get batch of records to process
-            query = text(f"""
+            query = text("""
                 SELECT id, "Org_nr", "Firmanavn"
                 FROM imported_table
                 WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id

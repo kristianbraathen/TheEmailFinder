@@ -1,0 +1,3 @@
+[config]
+command = deploy.cmd
+SCM_CLEAN_TARGET = true 

@@ -1,4 +1,4 @@
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 import requests
 import os
 import logging
@@ -22,6 +22,10 @@ def trigger_webjob_start():
     try:
         logger.info("Starting WebJob trigger process...")
         
+        # Get search type from request, default to 'google'
+        search_type = request.json.get('search_type', 'google')
+        logger.info(f"Using search type: {search_type}")
+        
         if WEBJOBS_USER and WEBJOBS_PASS:
             logger.info("Attempting to use Kudu API...")
             # Delete old stop flag first
@@ -32,11 +36,25 @@ def trigger_webjob_start():
                 except Exception as e:
                     logger.warning(f"Could not remove stop flag: {e}")
 
-            response = requests.post(WEBJOBS_BASE_URL, auth=(WEBJOBS_USER, WEBJOBS_PASS))
+            # Add search_type as environment variable
+            headers = {
+                'Content-Type': 'application/json',
+                'SEARCH_TYPE': search_type
+            }
+            
+            response = requests.post(
+                WEBJOBS_BASE_URL, 
+                auth=(WEBJOBS_USER, WEBJOBS_PASS),
+                headers=headers
+            )
             logger.info(f"Kudu API response status: {response.status_code}")
             
             if response.status_code == 202:
-                return jsonify({"status": "WebJob startet", "method": "kudu_api"}), 202
+                return jsonify({
+                    "status": "WebJob startet", 
+                    "method": "kudu_api",
+                    "search_type": search_type
+                }), 202
             else:
                 logger.error(f"Kudu API error: {response.status_code} - {response.text}")
                 return jsonify({
