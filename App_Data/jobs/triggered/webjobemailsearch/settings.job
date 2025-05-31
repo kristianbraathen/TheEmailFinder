@@ -1,6 +1,5 @@
 {
-    "schedule": "0 */5 * * * *",
     "is_singleton": true,
     "stopping_wait_time": 60,
-    "script_file_path": "run_webjob.py"
+    "script_file_path": "run_email_search.py"
 } 

@@ -13,7 +13,8 @@ echo Directory contents:
 dir
 
 echo Running WebJob...
-%PYTHON_EXE% run_webjob.py
+cd %~dp0
+%PYTHON_EXE% run_email_search.py
 
 IF %ERRORLEVEL% NEQ 0 (
     echo WebJob failed with error code %ERRORLEVEL%
