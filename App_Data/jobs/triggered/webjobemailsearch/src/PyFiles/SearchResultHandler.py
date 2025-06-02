@@ -98,7 +98,15 @@ class SearchResultHandler:
             return True
         return False
 
-def search_emails_and_display(batch_size=5, force_run=False):
+def search_emails_and_display(search_provider=None, batch_size=5, force_run=False):
+    """Main search function that uses a search provider to find emails
+    Args:
+        search_provider: Instance of a search provider (GoogleKse, KseApi, etc.)
+        batch_size (int): Number of records to process per batch
+        force_run (bool): Whether to force continue running even if process_running is False
+    Returns:
+        bool: True if successful, False otherwise
+    """
     instance = SearchResultHandler.get_instance()
     try:
         # Ensure process is started and log initial state
@@ -106,6 +114,10 @@ def search_emails_and_display(batch_size=5, force_run=False):
         instance.logger.info(f"🔵 process_running is {instance.process_running}")
         instance.logger.info("🔵 search_emails_and_display() started.")
         
+        if search_provider is None:
+            instance.logger.error("❌ No search provider specified")
+            return False
+
         last_id = get_last_processed_id()
 
         while instance.process_running or force_run:
@@ -135,21 +147,8 @@ def search_emails_and_display(batch_size=5, force_run=False):
                 row_id, org_nr, company_name = row
                 instance.logger.info(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
 
-                search_query = f'"{company_name}" "Norge"'
-                instance.logger.info(f"🔍 Searching with query: {search_query}")
-
-                search_results = google_custom_search(search_query)
-                all_emails = []
-                for url in search_results:
-                    if not (instance.process_running or force_run):
-                        instance.logger.info("🔴 Process stop requested, breaking URL processing")
-                        break
-                    instance.logger.info(f"🌐 Extracting emails from URL: {url}")
-                    emails = extract_email_selenium(url)
-                    all_emails.extend(emails)
-
-                unique_emails = set(all_emails)
-                email_list = list(unique_emails)
+                # Use the search provider to find emails
+                email_list = search_provider.search_company(company_name)
 
                 if email_list:
                     instance.logger.info(f"📧 Found {len(email_list)} unique emails for org_nr {org_nr}")

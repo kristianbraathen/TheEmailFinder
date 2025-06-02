@@ -132,102 +132,37 @@ class GoogleKse:
             return True
         return False
 
-def search_emails_and_display(batch_size=5, force_run=False):
-    instance = GoogleKse.get_instance()
-    
-    try:
-        # Ensure process is started and log initial state
-        instance.start()  # This sets process_running to True
-        instance.logger.info(f"🔵 Initial process_running state: {instance.process_running}")
-        instance.logger.info("🔵 search_emails_and_display() started.")
-        
-        last_id = 0  # Initialize last_id
-        chrome_service = Service(chromedriver_autoinstaller.install())
-        
-        while instance.process_running or force_run:  # Check process state at loop start
-            instance.logger.info(f"🟡 Current process state - running: {instance.process_running}, force_run: {force_run}")
+    def search_company(self, company_name):
+        """Perform Google-specific search for a company
+        Args:
+            company_name (str): Name of the company to search for
+        Returns:
+            list: List of found email addresses
+        """
+        try:
+            self.logger.info(f"🔍 Searching for company: {company_name}")
+            search_query = f'"{company_name}" "Norge"'
+            search_results = google_custom_search(search_query)
+            all_emails = []
             
-            # Get batch of records to process
-            query = text("""
-                SELECT id, "Org_nr", "Firmanavn"
-                FROM imported_table
-                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
-                ORDER BY id ASC
-                LIMIT :limit
-            """)
+            for url in search_results:
+                if self.check_stop():
+                    break
+                self.logger.info(f"🌐 Extracting emails from URL: {url}")
+                emails = extract_email_selenium(url)
+                all_emails.extend(emails)
             
-            try:
-                result = db.session.execute(query, {"last_id": last_id, "limit": batch_size})
-                rows = result.fetchall()
-                
-                if not rows:
-                    instance.logger.info("✅ No more records to process. Exiting loop.")
-                    break
-                
-                instance.logger.info(f"🟡 Processing batch of {len(rows)} records (starting from last_id: {last_id})")
-                
-                for row in rows:
-                    if not (instance.process_running or force_run):
-                        instance.logger.info("🔴 Process stop requested, breaking batch processing")
-                        break
-                        
-                    row_id, org_nr, company_name = row
-                    instance.logger.info(f"🔍 Processing record {row_id} - org_nr: {org_nr}, company_name: {company_name}")
-                    
-                    search_query = f'"{company_name}" "Norge"'
-                    search_results = google_custom_search(search_query)
-                    all_emails = []
-                    
-                    for url in search_results:
-                        if not (instance.process_running or force_run):
-                            break
-                        instance.logger.info(f"🌐 Extracting emails from URL: {url}")
-                        emails = extract_email_selenium(url)
-                        all_emails.extend(emails)
-                    
-                    unique_emails = set(all_emails)
-                    email_list = list(unique_emails)
-                    
-                    if email_list:
-                        instance.logger.info(f"📧 Found {len(email_list)} unique emails for org_nr {org_nr}")
-                        for email in email_list:
-                            insert_query = text("""
-                                INSERT INTO search_results ("Org_nr", company_name, email)
-                                VALUES (:org_nr, :company_name, :email)
-                            """)
-                            db.session.execute(insert_query, {
-                                "org_nr": org_nr,
-                                "company_name": company_name,
-                                "email": email
-                            })
-                        db.session.commit()
-                        instance.logger.info(f"✅ Emails saved for org_nr: {org_nr}")
-                    
-                    last_id = row_id  # Update last_id after successful processing
-                    instance.logger.info(f"🔄 Updated last_id to: {last_id}")
-                
-                if not (instance.process_running or force_run):
-                    instance.logger.info("🔴 Process stop requested, exiting main loop")
-                    break
-                    
-            except Exception as batch_error:
-                instance.logger.error(f"❌ Error processing batch: {str(batch_error)}")
-                db.session.rollback()
-                break
-        
-        instance.logger.info(f"✅ search_emails_and_display() completed. Final last_id: {last_id}")
-        return True
-        
-    except Exception as e:
-        instance.logger.error(f"❌ Error in search_emails_and_display(): {str(e)}")
-        return False
-    finally:
-        if not force_run:  # Only stop if not force_run
-            instance.stop()
-        instance.logger.info(f"🔄 Final process state - running: {instance.process_running}, force_run: {force_run}")
+            unique_emails = list(set(all_emails))
+            self.logger.info(f"📧 Found {len(unique_emails)} unique emails")
+            return unique_emails
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error searching for company {company_name}: {str(e)}")
+            return []
 
 @api6_blueprint.route('/start_process_google', methods=['POST'])
 def start_process_google():
+    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     global _instance
     
     with process_lock:
@@ -242,9 +177,9 @@ def start_process_google():
             try:
                 with current_app.app_context():
                     _instance.logger.info("[START] Background search started")
-                    result = search_emails_and_display(force_run=True)
+                    result = search_emails_and_display(search_provider=_instance, force_run=True)
                     
-                    if result and _instance.process_running:  # Only consider success if process completed normally
+                    if result and _instance.process_running:
                         _instance.logger.info("[SUCCESS] Background search completed successfully")
                     else:
                         status = "stopped early" if not _instance.process_running else "encountered an error"

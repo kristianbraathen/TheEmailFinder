@@ -40,8 +40,8 @@ def google_custom_search(query):
 
 class KseApi:
     def __init__(self):
+        self.process_running = True
         self.logger = logging.getLogger(__name__)
-        self.process_running = True  # Initialize as True by default
         self.chrome_options = Options()
         if os.path.exists("/usr/bin/google-chrome"):
             self.chrome_options.binary_location = "/usr/bin/google-chrome"
@@ -53,20 +53,23 @@ class KseApi:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-extensions")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
-        self.start()  # Ensure process is started on initialization
-        
+        self.logger.info("[INIT] KseApi instance initialized with process_running=True")
+
     @classmethod
     def get_instance(cls):
         global _instance
         if _instance is None:
             _instance = cls()
-        if not _instance.process_running:
-            _instance.start()  # Ensure process is running when getting instance
+            _instance.logger.info("[INSTANCE] Created new KseApi instance")
         return _instance
+        
+    def start(self):
+        self.process_running = True
+        self.logger.info("[START] Process started")
         
     def stop(self):
         self.process_running = False
-        self.logger.info("[STOP] Prosessen er stoppet av brukeren")
+        self.logger.info("[STOP] Process stopped")
         
     def check_stop(self, force_run=False):
         """Check if process should stop
@@ -80,7 +83,7 @@ class KseApi:
             self.logger.info("[STOP] Stop flag detected, stopping process")
             self.process_running = False
             try:
-                os.remove(STOP_FLAG_FILE)  # Clean up the flag file
+                os.remove(STOP_FLAG_FILE)
                 self.logger.info("[STOP] Stop flag removed")
             except Exception as e:
                 self.logger.warning(f"[STOP] Could not remove stop flag: {e}")
@@ -92,99 +95,46 @@ class KseApi:
             return True
         return False
 
-    def start(self):
-        self.process_running = True
-        self.logger.info("[START] Process started")
-
-def search_emails_and_display(kse_api=None, batch_size=5, force_run=False):
-    try:
-        # Initialize KseApi instance if not provided
-        if kse_api is None:
-            kse_api = KseApi.get_instance()
-            kse_api.start()  # Ensure process_running is True
-
-        kse_api.logger.info(f"🔵 process_running is {kse_api.process_running}")
-        kse_api.logger.info("🔵 search_emails_and_display() started.")
-        
-        last_id = 0
-        chrome_service = Service(chromedriver_autoinstaller.install())
-        
-        while True:
-            if kse_api.check_stop(force_run):
-                kse_api.logger.info("🔴 Process stopped, exiting...")
-                break
-
-            kse_api.logger.info(f"🟡 Fetching batch starting from last_id: {last_id}")
+    def search_company(self, company_name):
+        """Perform KSE-specific search for a company
+        Args:
+            company_name (str): Name of the company to search for
+        Returns:
+            list: List of found email addresses
+        """
+        try:
+            self.logger.info(f"🔍 Searching for company: {company_name}")
+            search_query = f'"{company_name}" "Norge"'
+            search_results = google_custom_search(search_query)
+            all_emails = []
             
-            # Get batch of records to process
-            query = text("""
-                SELECT id, "Org_nr", "Firmanavn"
-                FROM imported_table
-                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
-                ORDER BY id ASC
-                LIMIT :limit
-            """)
-            result = db.session.execute(query, {"last_id": last_id, "limit": batch_size})
-            rows = result.fetchall()
-
-            if not rows:
-                kse_api.logger.info("✅ No more records to process. Exiting loop.")
-                break
-
-            kse_api.logger.info(f"🟡 Processing batch of {len(rows)} records (last_id: {last_id}).")
-
-            for row in rows:
-                if kse_api.check_stop(force_run):
+            chrome_service = Service(chromedriver_autoinstaller.install())
+            
+            for url in search_results:
+                if self.check_stop():
                     break
+                self.logger.info(f"🌐 Extracting emails from URL: {url}")
+                try:
+                    driver = webdriver.Chrome(service=chrome_service, options=self.chrome_options)
+                    driver.get(url)
+                    page_source = driver.page_source
+                    emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
+                    all_emails.extend(emails)
+                    driver.quit()
+                except Exception as e:
+                    self.logger.error(f"❌ Error extracting emails from {url}: {str(e)}")
 
-                row_id, org_nr, company_name = row
-                kse_api.logger.info(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
-
-                search_query = f'"{company_name}" "Norge"'
-                kse_api.logger.info(f"🔍 Searching with query: {search_query}")
-
-                search_results = google_custom_search(search_query)
-                all_emails = []
-                
-                for url in search_results:
-                    if kse_api.check_stop(force_run):
-                        break
-                    kse_api.logger.info(f"🌐 Extracting emails from URL: {url}")
-                    try:
-                        driver = webdriver.Chrome(service=chrome_service, options=kse_api.chrome_options)
-                        driver.get(url)
-                        page_source = driver.page_source
-                        emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
-                        all_emails.extend(emails)
-                        driver.quit()
-                    except Exception as e:
-                        kse_api.logger.error(f"❌ Error extracting emails from {url}: {str(e)}")
-
-                unique_emails = set(all_emails)
-                email_list = list(unique_emails)
-
-                if email_list:
-                    kse_api.logger.info(f"📧 Found emails: {email_list}")
-                    for email in email_list:
-                        insert_query = text("""
-                            INSERT INTO search_results ("Org_nr", company_name, email)
-                            VALUES (:org_nr, :company_name, :email)
-                        """)
-                        db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
-                    db.session.commit()
-                    kse_api.logger.info(f"✅ Emails inserted into database for org_nr: {org_nr}")
-
-                last_id = row_id
-
-        kse_api.logger.info("✅ search_emails_and_display() completed.")
-        return True
-
-    except Exception as e:
-        kse_api.logger.error(f"❌ Error in search_emails_and_display(): {str(e)}")
-        return False
+            unique_emails = list(set(all_emails))
+            self.logger.info(f"📧 Found {len(unique_emails)} unique emails")
+            return unique_emails
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error searching for company {company_name}: {str(e)}")
+            return []
 
 @api3_blueprint.route('/start_process_kse', methods=['POST'])
 def start_process_kse():
+    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     global _instance
     
     with process_lock:
@@ -199,16 +149,21 @@ def start_process_kse():
             try:
                 with current_app.app_context():
                     _instance.logger.info("[START] Background search started")
-                    result = search_emails_and_display(_instance, force_run=True)  # Added force_run=True
-                    if result:
+                    result = search_emails_and_display(search_provider=_instance, force_run=True)
+                    
+                    if result and _instance.process_running:
                         _instance.logger.info("[SUCCESS] Background search completed successfully")
                     else:
-                        _instance.logger.warning("[WARNING] Background search encountered an issue")
+                        status = "stopped early" if not _instance.process_running else "encountered an error"
+                        _instance.logger.warning(f"[WARNING] Background search {status}")
+                        
             except Exception as e:
                 _instance.logger.error(f"[ERROR] Error in background search: {str(e)}")
             finally:
                 with process_lock:
+                    was_running = _instance.process_running
                     _instance.stop()
+                    _instance.logger.info(f"[STOP] Background search finished. Was running: {was_running}")
 
         threading.Thread(target=background_search, daemon=True).start()
         return jsonify({"status": "Process started and running in background"}), 200

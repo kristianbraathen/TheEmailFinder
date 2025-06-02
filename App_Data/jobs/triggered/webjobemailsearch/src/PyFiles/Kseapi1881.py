@@ -23,12 +23,15 @@ class Kseapi1881:
     def __init__(self):
         self.process_running = True
         self.logger = logging.getLogger(__name__)
+        self.chrome_options = chrome_options
+        self.logger.info("[INIT] Kseapi1881 instance initialized with process_running=True")
         
     @classmethod
     def get_instance(cls):
         global _instance
         if _instance is None:
             _instance = cls()
+            _instance.logger.info("[INSTANCE] Created new Kseapi1881 instance")
         return _instance
         
     def start(self):
@@ -37,18 +40,68 @@ class Kseapi1881:
         
     def stop(self):
         self.process_running = False
-        self.logger.info("[STOP] Process stopped by user")
+        self.logger.info("[STOP] Process stopped")
         
     def check_stop(self, force_run=False):
+        """Check if process should stop
+        Args:
+            force_run (bool): If True, ignore process_running state
+        Returns:
+            bool: True if should stop, False otherwise
+        """
+        # Always check stop flag first
         if os.path.exists(STOP_FLAG_FILE):
             self.logger.info("[STOP] Stop flag detected, stopping process")
             self.process_running = False
+            try:
+                os.remove(STOP_FLAG_FILE)
+                self.logger.info("[STOP] Stop flag removed")
+            except Exception as e:
+                self.logger.warning(f"[STOP] Could not remove stop flag: {e}")
             return True
             
+        # Only check process_running if not force_run
         if not force_run and not self.process_running:
             self.logger.info("[STOP] Process stopped by user")
             return True
         return False
+
+    def search_company(self, company_name):
+        """Perform 1881-specific search for a company
+        Args:
+            company_name (str): Name of the company to search for
+        Returns:
+            list: List of found email addresses
+        """
+        try:
+            self.logger.info(f"🔍 Searching for company: {company_name}")
+            search_query = f'"{company_name}" "Norge"'
+            search_results = google_custom_search(search_query)
+            all_emails = []
+            
+            chrome_service = Service(chromedriver_autoinstaller.install())
+            
+            for url in search_results:
+                if self.check_stop():
+                    break
+                self.logger.info(f"🌐 Extracting emails from URL: {url}")
+                try:
+                    driver = webdriver.Chrome(service=chrome_service, options=self.chrome_options)
+                    driver.get(url)
+                    page_source = driver.page_source
+                    emails = set(re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', page_source))
+                    all_emails.extend(emails)
+                    driver.quit()
+                except Exception as e:
+                    self.logger.error(f"❌ Error extracting emails from {url}: {str(e)}")
+
+            unique_emails = list(set(all_emails))
+            self.logger.info(f"📧 Found {len(unique_emails)} unique emails")
+            return unique_emails
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error searching for company {company_name}: {str(e)}")
+            return []
 
 # Initialize Chrome options
 chromedriver_autoinstaller.install()
@@ -100,134 +153,51 @@ def extract_email_selenium(url):
         print(f"Feil ved uthenting av e-post fra {url}: {e}")
         return []
 
-def search_emails_and_display(batch_size=5, force_run=False):
-    instance = Kseapi1881.get_instance()
-    try:
-        print(f"🔵 process_running is {instance.process_running}")
-        print("🔵 search_emails_and_display() started.")
-        
-        last_id = 0
-        
-        while True:
-            if instance.check_stop(force_run):
-                print("🔴 Process stopped, exiting...")
-                break
-
-            print(f"🟡 Fetching batch starting from last_id: {last_id}")
-            
-            # Bruker SQLAlchemy tekst-spørring med korrekt PostgreSQL-syntaks
-            query = text(f"""
-                SELECT id, "Org_nr", "Firmanavn"
-                FROM imported_table
-                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
-                ORDER BY id ASC
-                LIMIT :limit
-            """)
-            result = db.session.execute(query, {"last_id": last_id, "limit": batch_size})
-            rows = result.fetchall()
-
-            if not rows:
-                print("✅ Ingen flere rader å behandle. Exiting loop.")
-                break
-
-            print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
-
-            for row in rows:
-                # Only check process_running if not force_run
-                if not force_run and not instance.process_running:
-                    print("🔴 Prosessen er stoppet av brukeren.")
-                    break
-
-                row_id, org_nr, company_name = row
-                print(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
-
-                search_query = f'"{company_name}" "Norge"'
-                print(f"🔍 Søker med query: {search_query}")
-
-                search_results = google_custom_search(search_query)
-                all_emails = []
-                for url in search_results:
-                    # Only check process_running if not force_run
-                    if not force_run and not instance.process_running:
-                        print("🔴 Prosessen er stoppet av brukeren.")
-                        break
-                    print(f"🌐 Extracting emails from URL: {url}")
-                    emails = extract_email_selenium(url)
-                    all_emails.extend(emails)
-
-                unique_emails = set(all_emails)
-                email_list = list(unique_emails)
-
-                if email_list:
-                    print(f"📧 Found emails: {email_list}")
-                    for email in email_list:
-                        insert_query = text("""
-                            INSERT INTO search_results ("Org_nr", company_name, email)
-                            VALUES (:org_nr, :company_name, :email)
-                        """)
-                        db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
-                    db.session.commit()
-                    print(f"✅ Emails inserted into database for org_nr: {org_nr}")
-
-                last_id = row_id
-
-            # Only check process_running if not force_run
-            if not force_run and not instance.process_running:
-                print("🔴 Exiting loop as process_running is False.")
-                break
-
-        print("✅ search_emails_and_display() completed.")
-        return True
-
-    except Exception as e:
-        print(f"❌ Error in search_emails_and_display(): {str(e)}")
-        db.session.rollback()
-        return False
-
 @api5_blueprint.route('/start_process', methods=['POST'])
 def start_process_1881():
+    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     instance = Kseapi1881.get_instance()
 
     with process_lock:
         if instance.process_running:
-            return jsonify({"status": "Prosess kjører allerede"}), 400
+            return jsonify({"status": "Process is already running"}), 400
 
         instance.start()
-        print(f"🔵 process_running is {instance.process_running}")
-        print("Prosess starter...")
-
+        
         def background_search():
-            from src.PyFiles.app import app
             try:
-                with app.app_context(): 
-                    print("🔵 Bakgrunnssøk startet.")
-                    result = search_emails_and_display(force_run=True)
-                    if result:
-                        print("✅ Bakgrunnssøk fullført.")
+                with current_app.app_context():
+                    instance.logger.info("[START] Background search started")
+                    result = search_emails_and_display(search_provider=instance, force_run=True)
+                    
+                    if result and instance.process_running:
+                        instance.logger.info("[SUCCESS] Background search completed successfully")
                     else:
-                        print("⚠️ Bakgrunnssøk møtte et problem.")
+                        status = "stopped early" if not instance.process_running else "encountered an error"
+                        instance.logger.warning(f"[WARNING] Background search {status}")
+                        
             except Exception as e:
-                print(f"❌ Feil ved prosessstart i bakgrunnssøk: {str(e)}")
+                instance.logger.error(f"[ERROR] Error in background search: {str(e)}")
             finally:
                 with process_lock:
+                    was_running = instance.process_running
                     instance.stop()
-                print("🔴 Bakgrunnssøk avsluttet. process_running satt til False.")
+                    instance.logger.info(f"[STOP] Background search finished. Was running: {was_running}")
 
         threading.Thread(target=background_search, daemon=True).start()
+        return jsonify({"status": "Process started and running in background"}), 200
 
-    return jsonify({"status": "Prosess startet og kjører i bakgrunnen."}), 200
-
-@api5_blueprint.route('/stop_process_1881', methods=['POST'])
+@api5_blueprint.route('/stop_process', methods=['POST'])
 def stop_process_1881():
     instance = Kseapi1881.get_instance()
     
     with process_lock:
         if not instance.process_running:
-            return jsonify({"status": "Prosessen var ikke i gang (allerede stoppet)."}), 200
+            return jsonify({"status": "Process was not running"}), 200
+
         try:
             instance.stop()
-            print("Prosessen er stoppet.")
-            return jsonify({"status": "Prosessen er stoppet."}), 200
+            return jsonify({"status": "Process stopped"}), 200
         except Exception as e:
-            print(f"Feil ved stopp prosess: {str(e)}")
-            return jsonify({"status": f"Feil ved stopp av prosess: {str(e)}"}), 500
+            instance.logger.error(f"[ERROR] Error stopping process: {str(e)}")
+            return jsonify({"status": f"Error stopping process: {str(e)}"}), 500
