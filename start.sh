@@ -20,15 +20,15 @@ setup_webjobs() {
     echo "Setting up WebJobs..."
     if [ -d "$WEBJOBS_DIR" ]; then
         echo "WebJobs directory found at $WEBJOBS_DIR"
-        chmod +x $WEBJOBS_DIR/run.cmd
-        chmod +x $WEBJOBS_DIR/setup.cmd
+        chmod +x $WEBJOBS_DIR/run.sh
+        chmod +x $WEBJOBS_DIR/setup.sh
         echo "Made WebJob scripts executable"
         
         # Run setup if it hasn't been run yet
         if [ ! -f "$WEBJOBS_DIR/.setup_complete" ]; then
             echo "Running WebJob setup..."
             cd $WEBJOBS_DIR
-            ./setup.cmd
+            ./setup.sh
             touch .setup_complete
             cd /app
         fi

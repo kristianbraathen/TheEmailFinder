@@ -35,20 +35,18 @@ RUN apt-get update && apt-get install -y \
     rm google-chrome-stable_current_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
-# Create necessary directories
-RUN mkdir -p /app/App_Data/jobs/triggered
+# Create necessary directories first
+RUN mkdir -p /app/App_Data/jobs/triggered \
+    && mkdir -p /home/LogFiles \
+    && chmod 777 /home/LogFiles
 
 # Copy the entire project
 COPY . /app
 
-# Ensure WebJob scripts are executable and have Unix line endings
-RUN find /app/App_Data/jobs -type f -name "*.cmd" -exec chmod +x {} \; && \
-    find /app/App_Data/jobs -type f -name "*.cmd" -exec dos2unix {} \; && \
-    find /app/App_Data/jobs -type f -name "*.sh" -exec chmod +x {} \; && \
-    find /app/App_Data/jobs -type f -name "*.sh" -exec dos2unix {} \;
-
-# Set proper permissions
-RUN chmod -R 755 /app
+# Ensure all shell scripts are executable and have proper line endings
+RUN find /app -type f -name "*.sh" -exec chmod +x {} \; \
+    && find /app -type f -name "*.sh" -exec dos2unix {} \; \
+    && chmod -R 755 /app
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
