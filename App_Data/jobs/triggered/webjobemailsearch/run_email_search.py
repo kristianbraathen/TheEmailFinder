@@ -4,6 +4,7 @@ import datetime
 import traceback
 import signal
 import time
+import logging
 
 # Change log file to be in the same directory as the script
 LOG_FILE = os.path.join(os.path.dirname(__file__), "webjob.log")
@@ -151,9 +152,25 @@ def main():
         # Set up environment
         project_root, src_path = setup_environment()
         
-        # Import required modules
+        # Configure logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.StreamHandler(sys.stdout),
+                logging.FileHandler(LOG_FILE)
+            ]
+        )
+        
+        # Import and initialize required modules
         log("Attempting to import required modules...")
         from src.PyFiles.app import app
+        from src.PyFiles.Db import db
+        
+        # Initialize database
+        with app.app_context():
+            db.init_app(app)
+            log("✅ Database initialized")
         
         # Get the search module type from environment variable
         search_type = os.getenv('SEARCH_TYPE', 'google')
@@ -176,8 +193,9 @@ def main():
         # Main execution
         log("🚀 Starting main WebJob execution...")
         
-        # Run the search module
-        success = run_search_module(None, module_name, batch_size=5)
+        # Run the search module within app context
+        with app.app_context():
+            success = run_search_module(None, module_name, batch_size=5)
         
         if success:
             log("✅ Job completed successfully")
