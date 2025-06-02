@@ -1,24 +1,21 @@
 @echo off
-echo Starting WebJob execution...
+echo [%date% %time%] Starting WebJob execution...
 
-IF EXIST "%PYTHON_EXE%" (
-    echo Using Python from: %PYTHON_EXE%
-) ELSE (
-    echo Python not found at %PYTHON_EXE%, using system Python
-    set PYTHON_EXE=python
-)
-
-echo Current directory: %CD%
-echo Directory contents:
-dir
-
-echo Running WebJob...
+REM Change to script directory
 cd %~dp0
-%PYTHON_EXE% run_email_search.py
+echo [%date% %time%] Current directory: %CD%
 
-IF %ERRORLEVEL% NEQ 0 (
-    echo WebJob failed with error code %ERRORLEVEL%
+REM Ensure PYTHONPATH includes our src directory
+set PYTHONPATH=%CD%\src\PyFiles;%PYTHONPATH%
+echo [%date% %time%] PYTHONPATH: %PYTHONPATH%
+
+REM Run Python script with output redirection
+echo [%date% %time%] Running Python script...
+python run_email_search.py 2>&1
+
+if %ERRORLEVEL% NEQ 0 (
+    echo [%date% %time%] Python script failed with error code %ERRORLEVEL%
     exit /b %ERRORLEVEL%
 )
 
-echo WebJob completed successfully 
+echo [%date% %time%] Python script completed successfully 

@@ -1,12 +1,14 @@
+import sys
 import os
-import datetime
+import time
 
-# Simple log file in the same directory
-log_file = os.path.join(os.path.dirname(__file__), "test.log")
+print("TEST SCRIPT STARTING", flush=True)
+print(f"Python Version: {sys.version}", flush=True)
+print(f"Current Directory: {os.getcwd()}", flush=True)
+print(f"Directory Contents: {os.listdir()}", flush=True)
 
-# Write a simple message
-with open(log_file, "a") as f:
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    f.write(f"[{timestamp}] Test WebJob ran successfully\n")
-    f.write(f"Current directory: {os.getcwd()}\n")
-    f.write(f"Directory contents: {os.listdir('.')}\n") 
+# Write to a file to verify file system access
+with open("test_output.txt", "w") as f:
+    f.write("Test successful\n")
+
+print("TEST SCRIPT COMPLETED", flush=True) 
