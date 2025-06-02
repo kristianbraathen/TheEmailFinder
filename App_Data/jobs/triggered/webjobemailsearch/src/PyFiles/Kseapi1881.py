@@ -12,12 +12,17 @@ import chromedriver_autoinstaller
 import os
 import threading
 import logging
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 process_lock = Lock()
 _instance = None  # Singleton instance
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
+
+STOP_FLAG_FILE = "/app/stop_webjob.flag"
 
 class Kseapi1881:
     def __init__(self):
