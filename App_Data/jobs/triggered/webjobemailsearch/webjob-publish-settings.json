@@ -1,0 +1,15 @@
+{
+    "webjob_name": "webjobemailsearch",
+    "webjob_type": "triggered",
+    "webjob_url": "https://$WEBSITE_HOSTNAME.scm.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch",
+    "webjob_script_file": "run.py",
+    "webjob_script_arguments": "",
+    "webjob_script_environment": {
+        "WEBSITE_HOSTNAME": "$WEBSITE_HOSTNAME",
+        "WEBSITE_SITE_NAME": "$WEBSITE_SITE_NAME",
+        "WEBSITE_INSTANCE_ID": "$WEBSITE_INSTANCE_ID",
+        "PYTHONPATH": "$PYTHONPATH",
+        "DATABASE_CONNECTION_STRING": "$DATABASE_CONNECTION_STRING",
+        "CHROMEDRIVER_PATH": "$CHROMEDRIVER_PATH"
+    }
+} 

@@ -44,7 +44,9 @@ RUN mkdir -p /home/LogFiles && \
     mkdir -p /app/App_Data/jobs/triggered && \
     chmod 777 /app/App_Data/jobs/triggered && \
     find /app -type f -name "*.sh" -exec chmod +x {} \; && \
-    find /app -type f -name "*.sh" -exec dos2unix {} \;
+    find /app -type f -name "*.sh" -exec dos2unix {} \; && \
+    chmod -R 777 /app/App_Data/jobs/triggered/webjobemailsearch && \
+    chmod -R 777 /app/App_Data/jobs/triggered/testjob
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
