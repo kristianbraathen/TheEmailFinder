@@ -95,29 +95,34 @@ def setup_environment():
 def run_search_module(search_fn, name, batch_size=5):
     """Run a specific search module
     Args:
-        search_fn: The search function to use
+        search_fn: The search function to use (not used anymore)
         name: Name of the search module for logging
         batch_size: Number of records to process per batch
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # Initialize the module if it has get_instance
-        instance = None
-        module_name = search_fn.__module__
-        module = sys.modules[module_name]
-        if hasattr(module, 'get_instance'):
-            instance = module.get_instance()
-            instance.process_running = True
-            log(f"✅ Initialized instance for {name}")
-        
-        log(f"🔍 Starting {name} search...")
-        
-        # Always run with force_run=True for WebJob context
-        if instance:
-            success = search_fn(batch_size=batch_size, force_run=True)
+        # Import and get provider instance
+        if name == "Google CSE":
+            from src.PyFiles.GoogleKse import GoogleKse
+            provider = GoogleKse.get_instance()
+        elif name == "1881 CSE":
+            from src.PyFiles.Kseapi1881 import Kseapi1881
+            provider = Kseapi1881.get_instance()
+        elif name == "KSE CSE":
+            from src.PyFiles.KseApi import KseApi
+            provider = KseApi.get_instance()
         else:
-            success = search_fn(batch_size=batch_size, force_run=True)
+            log(f"❌ Unknown provider for {name}")
+            return False
+
+        # Start the provider
+        provider.start()  # This will set process_running to True
+        log(f"✅ Provider started with process_running = {provider.process_running}")
+        
+        # Run the search with the provider
+        from src.PyFiles.SearchResultHandler import search_emails_and_display
+        success = search_emails_and_display(search_provider=provider, batch_size=batch_size, force_run=True)
             
         if not success:
             log(f"⚠️ {name} search returned False")
@@ -127,6 +132,7 @@ def run_search_module(search_fn, name, batch_size=5):
         return True
     except Exception as e:
         log(f"❌ Error in {name} search: {str(e)}")
+        traceback.print_exc()
         return False
 
 def main():
@@ -138,16 +144,12 @@ def main():
         log("🔄 Starting WebJob initialization...")
         log(f"🐍 Python version: {sys.version}")
         log(f"📂 Current directory: {os.getcwd()}")
-        log(f"Directory contents: {os.listdir()}")
         
         # Check and install dependencies
         check_dependencies()
         
         # Set up environment
         project_root, src_path = setup_environment()
-        log(f"Project root: {project_root}")
-        log(f"Python path: {sys.path}")
-        log(f"Checking src directory: {src_path}")
         
         # Import required modules
         log("Attempting to import required modules...")
@@ -157,33 +159,31 @@ def main():
         search_type = os.getenv('SEARCH_TYPE', 'google')
         log(f"🔍 Running search type: {search_type}")
         
-        # Import and configure the appropriate search module
-        if search_type == 'google':
-            from src.PyFiles.GoogleKse import search_emails_and_display as search_fn
-            module_name = "Google CSE"
-        elif search_type == '1881':
-            from src.PyFiles.Kseapi1881 import search_emails_and_display as search_fn
-            module_name = "1881 CSE"
-        elif search_type == 'kse':
-            from src.PyFiles.KseApi import search_emails_and_display as search_fn
-            module_name = "KSE CSE"
-        else:
+        # Map search types to module configurations
+        search_configs = {
+            'google': ('src.PyFiles.GoogleKse', "Google CSE"),
+            '1881': ('src.PyFiles.Kseapi1881', "1881 CSE"),
+            'kse': ('src.PyFiles.KseApi', "KSE CSE")
+        }
+        
+        if search_type not in search_configs:
             log(f"❌ Unknown search type: {search_type}")
             raise ValueError(f"Unknown search type: {search_type}")
             
-        log("✅ Successfully imported required modules")
+        module_path, module_name = search_configs[search_type]
+        log(f"🔄 Using search module: {module_path} ({module_name})")
         
         # Main execution
         log("🚀 Starting main WebJob execution...")
         
-        # Run the search module with force_run=True
-        success = run_search_module(search_fn, module_name, batch_size=5)
+        # Run the search module
+        success = run_search_module(None, module_name, batch_size=5)
         
         if success:
-            log("✅ WebJob completed successfully")
+            log("✅ Job completed successfully")
             return 0
         else:
-            log("⚠️ WebJob completed with warnings")
+            log("⚠️ Job completed with warnings")
             return 1
             
     except Exception as e:

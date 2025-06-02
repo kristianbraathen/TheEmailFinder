@@ -7,6 +7,9 @@ import psycopg2
 import logging
 import os
 
+# Define STOP_FLAG_FILE path
+STOP_FLAG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "stop_webjob.flag")
+
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
 CORS(email_result_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
@@ -108,9 +111,18 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
         bool: True if successful, False otherwise
     """
     instance = SearchResultHandler.get_instance()
+    
+    # Check if we can start
+    if not force_run and hasattr(search_provider, 'process_running') and not search_provider.process_running:
+        instance.logger.info("🔴 Cannot start: provider process_running is False")
+        return False
+        
     try:
         # Ensure process is started and log initial state
         instance.start()  # This sets process_running to True
+        if hasattr(search_provider, 'start'):
+            search_provider.start()  # Ensure provider is also started
+            
         instance.logger.info(f"🔵 process_running is {instance.process_running}")
         instance.logger.info("🔵 search_emails_and_display() started.")
         
@@ -120,7 +132,11 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
 
         last_id = get_last_processed_id()
 
-        while instance.process_running or force_run:
+        while True:  # Changed to always check conditions inside loop
+            if not (instance.process_running or force_run):
+                instance.logger.info("🔴 Process stopped by user")
+                break
+
             instance.logger.info(f"🟡 Fetching batch starting from last_id: {last_id}")
             
             query = text("""
@@ -141,7 +157,7 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
 
             for row in rows:
                 if not (instance.process_running or force_run):
-                    instance.logger.info("🔴 Process stop requested, breaking batch processing")
+                    instance.logger.info("🔴 Process stopped by user")
                     break
 
                 row_id, org_nr, company_name = row
@@ -165,10 +181,6 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
                 last_id = row_id
                 update_last_processed_id(new_id=last_id)
 
-            if not (instance.process_running or force_run):
-                instance.logger.info("🔴 Process stop requested, exiting main loop")
-                break
-
         instance.logger.info("✅ search_emails_and_display() completed.")
         return True
 
@@ -179,6 +191,8 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
     finally:
         if not force_run:  # Only stop if not force_run
             instance.stop()
+            if hasattr(search_provider, 'stop'):
+                search_provider.stop()
         instance.logger.info(f"🔄 Final process state - running: {instance.process_running}, force_run: {force_run}")
 
 # --- FLASK ROUTES ---

@@ -100,7 +100,7 @@ class KseApi:
             
         # Only check process_running if not force_run
         if not force_run and not self.process_running:
-            self.logger.info("[STOP] Process stopped by user")
+            self.logger.info("🔴 Process stopped by user")
             return True
         return False
 
