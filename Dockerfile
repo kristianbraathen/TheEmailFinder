@@ -35,18 +35,14 @@ RUN apt-get update && apt-get install -y \
     rm google-chrome-stable_current_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
-# Create necessary directories first
-RUN mkdir -p /app/App_Data/jobs/triggered \
-    && mkdir -p /home/LogFiles \
-    && chmod 777 /home/LogFiles
-
 # Copy the entire project
 COPY . /app
 
-# Ensure all shell scripts are executable and have proper line endings
-RUN find /app -type f -name "*.sh" -exec chmod +x {} \; \
-    && find /app -type f -name "*.sh" -exec dos2unix {} \; \
-    && chmod -R 755 /app
+# Set up directories and permissions
+RUN mkdir -p /home/LogFiles && \
+    chmod 777 /home/LogFiles && \
+    find /app -type f -name "*.sh" -exec chmod +x {} \; && \
+    find /app -type f -name "*.sh" -exec dos2unix {} \;
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
@@ -55,18 +51,11 @@ RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
 # Copy frontend build
 COPY --from=frontend /frontend/dist /app/dist
 
-# Copy and prepare start script
-COPY start.sh /app/start.sh
-RUN dos2unix /app/start.sh && chmod +x /app/start.sh
-
 # Environment variables
 ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 ENV PORT=80
 ENV PYTHONPATH=/app/src/PyFiles:/app/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles
-ENV WEBJOBS_IDLE_TIMEOUT=0
-ENV WEBJOBS_STOPPED=0
-ENV WEBSITE_SITE_NAME=theemailfinder
 
 EXPOSE 80
 
