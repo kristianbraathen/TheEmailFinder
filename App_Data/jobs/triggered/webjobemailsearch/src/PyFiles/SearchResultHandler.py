@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from .Db import db,get_db_connection
 import psycopg2
 import logging
+import os
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
@@ -60,18 +61,57 @@ def update_last_processed_id(process_name=PROCESS_NAME_EMAIL_SEARCH, new_id=None
 
 # --- SEARCH FUNCTION ---
 
-def search_emails_and_display(batch_size=5):
-    global process_running
+class SearchResultHandler:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.process_running = True
+        
+    @classmethod
+    def get_instance(cls):
+        global _instance
+        if _instance is None:
+            _instance = cls()
+            _instance.logger.info("[INSTANCE] Created new SearchResultHandler instance")
+        return _instance
+        
+    def start(self):
+        self.process_running = True
+        self.logger.info("[START] Process started")
+        
+    def stop(self):
+        self.process_running = False
+        self.logger.info("[STOP] Process stopped by user")
+        
+    def check_stop(self, force_run=False):
+        if os.path.exists(STOP_FLAG_FILE):
+            self.logger.info("[STOP] Stop flag detected, stopping process")
+            self.process_running = False
+            try:
+                os.remove(STOP_FLAG_FILE)
+                self.logger.info("[STOP] Stop flag removed")
+            except Exception as e:
+                self.logger.warning(f"[STOP] Could not remove stop flag: {e}")
+            return True
+            
+        if not force_run and not self.process_running:
+            self.logger.info("[STOP] Process stopped by user")
+            return True
+        return False
+
+def search_emails_and_display(batch_size=5, force_run=False):
+    instance = SearchResultHandler.get_instance()
     try:
-        print(f"🔵 process_running is {process_running}")
-        print("🔵 search_emails_and_display() started.")
+        # Ensure process is started and log initial state
+        instance.start()  # This sets process_running to True
+        instance.logger.info(f"🔵 process_running is {instance.process_running}")
+        instance.logger.info("🔵 search_emails_and_display() started.")
         
         last_id = get_last_processed_id()
 
-        while True:
-            print(f"🟡 Fetching batch starting from last_id: {last_id}")
+        while instance.process_running or force_run:
+            instance.logger.info(f"🟡 Fetching batch starting from last_id: {last_id}")
             
-            query = text(f"""
+            query = text("""
                 SELECT id, "Org_nr", "Firmanavn"
                 FROM imported_table
                 WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
@@ -82,29 +122,29 @@ def search_emails_and_display(batch_size=5):
             rows = result.fetchall()
 
             if not rows:
-                print("✅ Ingen flere rader å behandle. Exiting loop.")
+                instance.logger.info("✅ No more records to process. Exiting loop.")
                 break
 
-            print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
+            instance.logger.info(f"🟡 Processing batch of {len(rows)} records (last_id: {last_id}).")
 
             for row in rows:
-                if not process_running:
-                    print("🔴 Prosessen er stoppet av brukeren.")
+                if not (instance.process_running or force_run):
+                    instance.logger.info("🔴 Process stop requested, breaking batch processing")
                     break
 
                 row_id, org_nr, company_name = row
-                print(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
+                instance.logger.info(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
 
                 search_query = f'"{company_name}" "Norge"'
-                print(f"🔍 Søker med query: {search_query}")
+                instance.logger.info(f"🔍 Searching with query: {search_query}")
 
                 search_results = google_custom_search(search_query)
                 all_emails = []
                 for url in search_results:
-                    if not process_running:
-                        print("🔴 Prosessen er stoppet av brukeren.")
+                    if not (instance.process_running or force_run):
+                        instance.logger.info("🔴 Process stop requested, breaking URL processing")
                         break
-                    print(f"🌐 Extracting emails from URL: {url}")
+                    instance.logger.info(f"🌐 Extracting emails from URL: {url}")
                     emails = extract_email_selenium(url)
                     all_emails.extend(emails)
 
@@ -112,7 +152,7 @@ def search_emails_and_display(batch_size=5):
                 email_list = list(unique_emails)
 
                 if email_list:
-                    print(f"📧 Found emails: {email_list}")
+                    instance.logger.info(f"📧 Found {len(email_list)} unique emails for org_nr {org_nr}")
                     for email in email_list:
                         insert_query = text("""
                             INSERT INTO search_results ("Org_nr", company_name, email)
@@ -121,22 +161,26 @@ def search_emails_and_display(batch_size=5):
                         """)
                         db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
                     db.session.commit()
-                    print(f"✅ Emails inserted into database for org_nr: {org_nr}")
+                    instance.logger.info(f"✅ Emails saved for org_nr: {org_nr}")
 
                 last_id = row_id
                 update_last_processed_id(new_id=last_id)
 
-            if not process_running:
-                print("🔴 Exiting loop as process_running is False.")
+            if not (instance.process_running or force_run):
+                instance.logger.info("🔴 Process stop requested, exiting main loop")
                 break
 
-        print("✅ search_emails_and_display() completed.")
+        instance.logger.info("✅ search_emails_and_display() completed.")
         return True
 
     except Exception as e:
-        print(f"❌ Feil i search_emails_and_display(): {str(e)}")
+        instance.logger.error(f"❌ Error in search_emails_and_display(): {str(e)}")
         db.session.rollback()
         return False
+    finally:
+        if not force_run:  # Only stop if not force_run
+            instance.stop()
+        instance.logger.info(f"🔄 Final process state - running: {instance.process_running}, force_run: {force_run}")
 
 # --- FLASK ROUTES ---
 
@@ -218,21 +262,5 @@ def update_email():
     except Exception as e:
         print(f"Feil ved oppdatering/sletting: {e}")  # Logg feilen
         return jsonify({'error': 'Intern feil', 'details': str(e)}), 500
-
-class SearchResultHandler:
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.process_running = True
-        
-    def process_record(self, record):
-        if not self.process_running:
-            self.logger.info("[STOP] Process stopped by user")
-            return False
-            
-        # ... existing code ...
-        
-    def stop(self):
-        self.process_running = False
-        self.logger.info("[STOP] Process stopped by user")
 
 

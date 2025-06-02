@@ -89,6 +89,7 @@ class GoogleKse:
     def __init__(self):
         self.process_running = True
         self.logger = logging.getLogger(__name__)
+        self.chrome_options = chrome_options
         self.logger.info("[INIT] GoogleKse instance initialized with process_running=True")
 
     @classmethod

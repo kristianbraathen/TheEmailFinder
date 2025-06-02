@@ -113,9 +113,9 @@ def run_search_module(search_fn, name, batch_size=5):
         
         log(f"🔍 Starting {name} search...")
         
-        # Run the search with instance if available
+        # Always run with force_run=True for WebJob context
         if instance:
-            success = search_fn(kse_api=instance, batch_size=batch_size, force_run=True)
+            success = search_fn(batch_size=batch_size, force_run=True)
         else:
             success = search_fn(batch_size=batch_size, force_run=True)
             
@@ -175,32 +175,21 @@ def main():
         
         # Main execution
         log("🚀 Starting main WebJob execution...")
-        with app.app_context():
-            batch_size = 5
-            
-            while not should_exit and not check_stop_flag():
-                try:
-                    success = run_search_module(search_fn, module_name, batch_size)
-                    if not success:
-                        log(f"⚠️ {module_name} search failed")
-                        break
-                    
-                    # Small delay between batches
-                    time.sleep(1)
-                    
-                except Exception as e:
-                    log(f"❌ Error in main loop: {str(e)}")
-                    log(f"Traceback: {traceback.format_exc()}")
-                    break
-                
-            log("✅ Job completed successfully")
+        
+        # Run the search module with force_run=True
+        success = run_search_module(search_fn, module_name, batch_size=5)
+        
+        if success:
+            log("✅ WebJob completed successfully")
+            return 0
+        else:
+            log("⚠️ WebJob completed with warnings")
+            return 1
             
     except Exception as e:
-        log(f"❌ Fatal error: {str(e)}")
-        log(f"Traceback: {traceback.format_exc()}")
-        sys.exit(1)
-    finally:
-        log("🛑 WebJob execution finished")
+        log(f"❌ Error in main execution: {str(e)}")
+        traceback.print_exc()
+        return 1
 
 if __name__ == "__main__":
     main()
