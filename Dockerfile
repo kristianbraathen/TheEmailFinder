@@ -35,36 +35,42 @@ RUN apt-get update && apt-get install -y \
     rm google-chrome-stable_current_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
-# Kopier hele prosjektet til /app
+# Create necessary directories
+RUN mkdir -p /app/App_Data/jobs/triggered
+
+# Copy the entire project
 COPY . /app
 
-# Kopier WebJob-koden inn i containeren (fra lokalt prosjekt)
-COPY App_Data/jobs/triggered/webjobemailsearch /app/App_Data/jobs/triggered/webjobemailsearch
+# Ensure WebJob scripts are executable and have Unix line endings
+RUN find /app/App_Data/jobs -type f -name "*.cmd" -exec chmod +x {} \; && \
+    find /app/App_Data/jobs -type f -name "*.cmd" -exec dos2unix {} \; && \
+    find /app/App_Data/jobs -type f -name "*.sh" -exec chmod +x {} \; && \
+    find /app/App_Data/jobs -type f -name "*.sh" -exec dos2unix {} \;
 
-# Sett riktige rettigheter
+# Set proper permissions
 RUN chmod -R 755 /app
 
-# Installer Python-avhengigheter
+# Install Python dependencies
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
-# Kopier frontend-bygg fra frontend stage
+# Copy frontend build
 COPY --from=frontend /frontend/dist /app/dist
 
-RUN ls -la /app/dist
-
-# Kopier start.sh og gjør den kjørbar
+# Copy and prepare start script
 COPY start.sh /app/start.sh
 RUN dos2unix /app/start.sh && chmod +x /app/start.sh
 
-# Miljøvariabler
+# Environment variables
 ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
-
 ENV PORT=80
-ENV PYTHONPATH=/app/src/PyFiles
+ENV PYTHONPATH=/app/src/PyFiles:/app/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles
+ENV WEBJOBS_IDLE_TIMEOUT=0
+ENV WEBJOBS_STOPPED=0
+ENV WEBSITE_SITE_NAME=theemailfinder
 
 EXPOSE 80
 
-# Start appen
+# Start the app
 CMD ["/app/start.sh"]

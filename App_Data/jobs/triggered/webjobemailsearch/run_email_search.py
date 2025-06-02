@@ -3,11 +3,15 @@ import sys
 import logging
 from datetime import datetime
 
-# Add src/PyFiles to Python path
+# Configure paths for both WebJob and main app sources
 current_dir = os.path.dirname(os.path.abspath(__file__))
-src_path = os.path.join(current_dir, 'src', 'PyFiles')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
+webjob_src_path = os.path.join(current_dir, "src", "PyFiles")
+app_src_path = "/app/src/PyFiles"
+
+# Add both paths to Python path
+for path in [webjob_src_path, app_src_path]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
 # Configure logging
 LOG_FILE = os.path.join(current_dir, "webjob.log")
@@ -24,6 +28,10 @@ logger = logging.getLogger(__name__)
 def main():
     try:
         logger.info("🚀 Starting WebJob...")
+        logger.info(f"Current directory: {current_dir}")
+        logger.info(f"WebJob src path: {webjob_src_path}")
+        logger.info(f"App src path: {app_src_path}")
+        logger.info(f"Python path: {sys.path}")
         
         # Import required modules
         from app import app
