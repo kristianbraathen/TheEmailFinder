@@ -53,6 +53,15 @@ class KseApi:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-extensions")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.chrome_options.add_argument("--disable-software-rasterizer")
+        self.chrome_options.add_argument("--lang=en-NO")
+        self.chrome_options.add_argument("--enable-unsafe-swiftshader")
+        self.chrome_options.add_argument("--disable-user-data-dir")
+        self.chrome_options.add_argument("--disable-dev-tools")
+        self.chrome_options.add_argument("--remote-debugging-port=0")
+        self.chrome_options.add_argument("--log-level=3")
+        self.chrome_options.add_argument("--disable-default-apps")
+        self.chrome_options.add_argument("--disable-session-crashed-bubble")
         self.logger.info("[INIT] KseApi instance initialized with process_running=True")
 
     @classmethod
