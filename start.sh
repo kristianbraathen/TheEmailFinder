@@ -6,16 +6,20 @@ PORT=${PORT:-80}
 echo "Using PORT: $PORT"
 
 # Set up WebJobs directory
-WEBJOBS_DIR=/app/App_Data/jobs/triggered/webjobemailsearch
+WEBJOBS_BASE_DIR=/app/App_Data/jobs/triggered
 echo "Setting up WebJobs..."
-if [ -d "$WEBJOBS_DIR" ]; then
-    echo "WebJobs directory found at $WEBJOBS_DIR"
-    chmod +x $WEBJOBS_DIR/run.cmd
-    chmod +x $WEBJOBS_DIR/setup.cmd
-    echo "Made WebJob scripts executable"
-else
-    echo "Warning: WebJobs directory not found at $WEBJOBS_DIR"
-fi
+
+# Process all WebJobs in the triggered directory
+for WEBJOB_DIR in $WEBJOBS_BASE_DIR/*/; do
+    if [ -d "$WEBJOB_DIR" ]; then
+        echo "Processing WebJob in $WEBJOB_DIR"
+        # Make all .sh and .cmd files executable
+        find "$WEBJOB_DIR" -type f \( -name "*.sh" -o -name "*.cmd" \) -exec chmod +x {} \;
+        # Convert line endings for Windows files
+        find "$WEBJOB_DIR" -type f -name "*.cmd" -exec dos2unix {} \;
+        echo "Made WebJob scripts executable in $WEBJOB_DIR"
+    fi
+done
 
 # (Valgfritt) Oppdater Chromedriver hvis det er ndvendig
 # python3 -c "import chromedriver_autoinstaller; chromedriver_autoinstaller.install()"

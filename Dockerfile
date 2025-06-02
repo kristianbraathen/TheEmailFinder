@@ -41,6 +41,8 @@ COPY . /app
 # Set up directories and permissions
 RUN mkdir -p /home/LogFiles && \
     chmod 777 /home/LogFiles && \
+    mkdir -p /app/App_Data/jobs/triggered && \
+    chmod 777 /app/App_Data/jobs/triggered && \
     find /app -type f -name "*.sh" -exec chmod +x {} \; && \
     find /app -type f -name "*.sh" -exec dos2unix {} \;
 
@@ -56,6 +58,9 @@ ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 ENV PORT=80
 ENV PYTHONPATH=/app/src/PyFiles:/app/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles
+ENV WEBSITE_HOSTNAME=localhost
+ENV WEBSITE_SITE_NAME=webjobemailsearch
+ENV WEBSITE_INSTANCE_ID=local
 
 EXPOSE 80
 
