@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build, deploy Docker app + WebJob to Azure
+name: Build and deploy Docker app to Azure
 
 env:
   AZURE_WEBAPP_NAME: 'theemailfinder'
@@ -46,25 +46,6 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Prepare WebJob ZIP
-        run: |
-          echo "Creating WebJob directory structure..."
-          rm -rf webjobemailsearch
-          mkdir -p webjobemailsearch
-          
-          echo "Copying WebJob files..."
-          # First copy the entire directory structure
-          cp -r App_Data/jobs/triggered/webjobemailsearch/* webjobemailsearch/
-          
-          echo "Verifying src directory..."
-          ls -la webjobemailsearch/src/PyFiles/
-          
-          echo "Creating ZIP file..."
-          cd webjobemailsearch && zip -r ../webjobemailsearch.zip . && cd ..
-          
-          echo "WebJob ZIP contents:"
-          unzip -l webjobemailsearch.zip
-
       - name: Log in to Azure CLI
         uses: azure/login@v1
         with:
@@ -90,63 +71,4 @@ jobs:
               AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }} \
               AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }} \
               AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
-
-      - name: Upload WebJob files
-        run: |
-          echo "Cleaning up old files..."
-          curl -X DELETE -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/run_webjob.py
-
-          echo "Removing old src directory..."
-          curl -X DELETE -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/
-
-          echo "Creating new src directory structure..."
-          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/ \
-            -H "Content-Type: application/json" \
-            -d "{}"
-
-          echo "Uploading PyFiles..."
-          for file in App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/*.py; do
-            filename=$(basename "$file")
-            echo "Uploading $filename..."
-            curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-              --data-binary @"$file" \
-              -H "Content-Type: application/octet-stream" \
-              "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/$filename"
-          done
-
-          echo "Uploading other WebJob files..."
-          for file in App_Data/jobs/triggered/webjobemailsearch/*.{py,txt,job,cmd}; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              echo "Uploading $filename..."
-              curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-                --data-binary @"$file" \
-                -H "Content-Type: application/octet-stream" \
-                "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/$filename"
-            fi
-          done
-
-          echo "Setting execute permissions..."
-          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            -H "Content-Type: application/json" \
-            -d '{"executable": true}' \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/run.cmd
-
-          curl -X PUT -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            -H "Content-Type: application/json" \
-            -d '{"executable": true}' \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/setup.cmd
-
-          echo "Deployment complete. Verifying structure..."
-          curl -u "$DEPLOY_USER:$DEPLOY_PASS" \
-            https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/vfs/site/wwwroot/App_Data/jobs/triggered/webjobemailsearch/src/PyFiles/
-
-      - name: Wait for Azure to process changes
-        run: |
-          echo "Waiting for Azure to process changes..."
-          sleep 90
-          echo "Proceeding with deployment..."
 

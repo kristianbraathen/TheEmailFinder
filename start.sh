@@ -38,7 +38,7 @@ EOF
         fi
         
         echo "Made WebJob scripts executable in $WEBJOB_DIR"
-    fi
+fi
 done
 
 # (Valgfritt) Oppdater Chromedriver hvis det er ndvendig

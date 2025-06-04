@@ -14,8 +14,9 @@ from threading import Lock
 import threading
 import chromedriver_autoinstaller
 import os
-from src.PyFiles.Db import db # for SQLAlchemy session
+from .Db import db  # for SQLAlchemy session
 import logging
+from .SearchResultHandler import search_emails_and_display  # Import the main search function
 
 # Flask blueprint og CORS
 api6_blueprint = Blueprint('api6', __name__)
@@ -162,7 +163,6 @@ class GoogleKse:
 
 @api6_blueprint.route('/start_process_google', methods=['POST'])
 def start_process_google():
-    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     global _instance
     
     with process_lock:

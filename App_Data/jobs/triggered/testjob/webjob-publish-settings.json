@@ -2,7 +2,7 @@
     "webjob_name": "testjob",
     "webjob_type": "triggered",
     "webjob_url": "https://$WEBSITE_HOSTNAME.scm.azurewebsites.net/api/triggeredwebjobs/testjob",
-    "webjob_script_file": "run.sh",
+    "webjob_script_file": "run.py",
     "webjob_script_arguments": "",
     "webjob_script_environment": {
         "WEBSITE_HOSTNAME": "$WEBSITE_HOSTNAME",

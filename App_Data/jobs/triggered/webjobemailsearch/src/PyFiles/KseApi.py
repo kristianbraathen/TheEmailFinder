@@ -13,7 +13,8 @@ import os
 import threading
 import logging
 from sqlalchemy.sql import text
-from src.PyFiles.Db import db
+from .Db import db
+from .SearchResultHandler import search_emails_and_display  # Import the main search function
 
 api3_blueprint = Blueprint('api3', __name__)
 CORS(api3_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
@@ -143,7 +144,6 @@ class KseApi:
 
 @api3_blueprint.route('/start_process_kse', methods=['POST'])
 def start_process_kse():
-    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     global _instance
     
     with process_lock:

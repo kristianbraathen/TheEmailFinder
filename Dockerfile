@@ -35,13 +35,16 @@ RUN apt-get update && apt-get install -y \
     rm google-chrome-stable_current_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
+# Create necessary directories first
+RUN mkdir -p /home/LogFiles && \
+    mkdir -p /app/App_Data/jobs/triggered && \
+    mkdir -p /app/dist
+
 # Copy the entire project
 COPY . /app
 
-# Set up directories and permissions
-RUN mkdir -p /home/LogFiles && \
-    chmod 777 /home/LogFiles && \
-    mkdir -p /app/App_Data/jobs/triggered && \
+# Set up permissions
+RUN chmod 777 /home/LogFiles && \
     chmod 777 /app/App_Data/jobs/triggered && \
     find /app -type f -name "*.sh" -exec chmod +x {} \; && \
     find /app -type f -name "*.sh" -exec dos2unix {} \; && \
@@ -53,7 +56,7 @@ RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
 # Copy frontend build
-COPY --from=frontend /frontend/dist /app/dist
+COPY --from=frontend /frontend/dist/ /app/dist/
 
 # Environment variables
 ENV CHROME_BIN="/usr/bin/google-chrome"

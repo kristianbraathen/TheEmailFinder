@@ -15,6 +15,7 @@ import logging
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from .SearchResultHandler import search_emails_and_display  # Import the main search function
 
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
@@ -160,7 +161,6 @@ def extract_email_selenium(url):
 
 @api5_blueprint.route('/start_process', methods=['POST'])
 def start_process_1881():
-    from .SearchResultHandler import search_emails_and_display  # Import the main search function
     instance = Kseapi1881.get_instance()
 
     with process_lock:

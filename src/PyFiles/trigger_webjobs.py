@@ -1,6 +1,7 @@
 from flask import jsonify, Blueprint
 import requests
 import os
+import traceback
 
 trigger_webjobs = Blueprint("trigger_webjobs", __name__)
 
@@ -18,9 +19,13 @@ def trigger_webjob_start():
         if os.path.exists(STOP_FLAG_FILE):
             os.remove(STOP_FLAG_FILE)
 
+        print(f"Attempting to trigger WebJob at: {WEBJOBS_BASE_URL}")
+        print(f"Using credentials - User: {WEBJOBS_USER}, Pass: {'*' * len(WEBJOBS_PASS) if WEBJOBS_PASS else 'None'}")
+        
         response = requests.post(WEBJOBS_BASE_URL, auth=(WEBJOBS_USER, WEBJOBS_PASS))
         print("➡️ Statuskode:", response.status_code)
         print("➡️ Respons:", response.text)
+        print("➡️ Headers:", response.headers)
 
         if response.status_code == 202:
             return jsonify({"status": "WebJob startet"}), 202
@@ -28,12 +33,16 @@ def trigger_webjob_start():
             return jsonify({
                 "status": "Feil ved start",
                 "status_code": response.status_code,
-                "details": response.text
+                "details": response.text,
+                "headers": dict(response.headers)
             }), 500
     except Exception as e:
+        print(f"Exception details: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             "status": "Feil under start",
-            "details": str(e)
+            "details": str(e),
+            "traceback": traceback.format_exc()
         }), 500
 
 @trigger_webjobs.route("/stop", methods=["POST"])
@@ -43,4 +52,6 @@ def trigger_webjob_stop():
             f.write("STOP")
         return jsonify({"status": "Stoppflagg satt – WebJob bør avslutte snart"}), 200
     except Exception as e:
+        print(f"Stop exception: {str(e)}")
+        print(f"Stop traceback: {traceback.format_exc()}")
         return jsonify({"status": "Kunne ikke skrive stoppflagg", "details": str(e)}), 500

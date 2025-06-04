@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import sys
-from .Db import db
+from .Db import db, get_database_uri
 from .BrregUpdate import api2_blueprint
 from .KseApi import api3_blueprint
 from .SeleniumScrap import api4_blueprint
@@ -30,11 +30,8 @@ app = Flask(__name__, static_folder='../../dist', static_url_path='/')
 # CORS Configuration
 CORS(app, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net","http://localhost:8080"])
 
-# Retrieve the connection string from the environment variable
-database_url = os.getenv('DATABASE_CONNECTION_STRING')
-
-if not database_url:
-    raise ValueError("No database URL provided in environment variables.")
+# Get database URI from Db.py
+database_url = get_database_uri()
 
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url

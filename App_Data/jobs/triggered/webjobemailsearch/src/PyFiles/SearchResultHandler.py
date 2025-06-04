@@ -1,8 +1,10 @@
+_instance = None  # Singleton instance for SearchResultHandler
+
 from flask import Blueprint, jsonify, request
 from flask_cors import CORS
 from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlalchemy.ext.declarative import declarative_base
-from .Db import db,get_db_connection
+from .Db import db, get_db_connection
 import psycopg2
 import logging
 import os
@@ -201,79 +203,46 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
 def initialize_email_results():
     try:
         create_tables()
-        return jsonify({'status': 'Tables created or already exist.'}), 200
+        return jsonify({"status": "success", "message": "Tables initialized"}), 200
     except Exception as e:
-        return jsonify({'error': f'Failed to create tables: {str(e)}'}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @email_result_blueprint.route('/get_email_results', methods=['GET'])
 def get_email_results():
     try:
-        email_results = db.session.query(EmailResult).all()
-        results = [{
-            'id': r.id,
-            'Org_nr': r.Org_nr,
-            'company_name': r.company_name,
-            'email': r.email
-        } for r in email_results]
-        return jsonify(results), 200
+        results = db.session.query(EmailResult).all()
+        return jsonify([{"id": r.id, "Org_nr": r.Org_nr, "company_name": r.company_name, "email": r.email} for r in results]), 200
     except Exception as e:
-        return jsonify({'error': f'Failed to fetch email results: {str(e)}'}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @email_result_blueprint.route('/delete_stored_result', methods=['POST'])
 def delete_stored_result():
-    data = request.get_json()
-    org_nr = data.get("org_nr")
-    if not org_nr:
-        return jsonify({"status": "Feil: Org.nr mangler"}), 400
     try:
-        deleted_rows = db.session.query(EmailResult).filter_by(Org_nr=org_nr).delete()
-        db.session.commit()
-        if deleted_rows:
-            return jsonify({"status": f"Slettet {deleted_rows} resultater for org.nr {org_nr}."})
-        else:
-            return jsonify({"status": f"Ingen rader funnet for org.nr {org_nr}."})
+        data = request.get_json()
+        if not data or 'id' not in data:
+            return jsonify({"status": "error", "message": "No ID provided"}), 400
+        result = db.session.query(EmailResult).filter_by(id=data['id']).first()
+        if result:
+            db.session.delete(result)
+            db.session.commit()
+            return jsonify({"status": "success", "message": "Result deleted"}), 200
+        return jsonify({"status": "error", "message": "Result not found"}), 404
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"status": "Feil under sletting", "error": str(e)}), 500
-
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @email_result_blueprint.route('/update_email', methods=['POST'])
 def update_email():
-    data = request.get_json()
-    org_nr = data.get('org_nr')
-    email = data.get('email')
-
-    if not org_nr or not email:
-        return jsonify({'error': 'Ugyldige data'}), 400
-
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Oppdater e-post i imported_table
-        cursor.execute(
-            'UPDATE imported_table SET "E_post_1" = %s WHERE "Org_nr" = %s',
-            (email, str(org_nr))
-        )
-
-
-        # Slett fra EmailResult (search_result)
-        cursor.execute(
-            'DELETE FROM search_results WHERE "Org_nr" = %s',
-            (org_nr,)
-        )
-        deleted_rows = cursor.rowcount
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            'status': f"E-post oppdatert og {deleted_rows} søkeresultat(er) slettet for org.nr {org_nr}."
-        }), 200
-
+        data = request.get_json()
+        if not data or 'id' not in data or 'email' not in data:
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+        result = db.session.query(EmailResult).filter_by(id=data['id']).first()
+        if result:
+            result.email = data['email']
+            db.session.commit()
+            return jsonify({"status": "success", "message": "Email updated"}), 200
+        return jsonify({"status": "error", "message": "Result not found"}), 404
     except Exception as e:
-        print(f"Feil ved oppdatering/sletting: {e}")  # Logg feilen
-        return jsonify({'error': 'Intern feil', 'details': str(e)}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
