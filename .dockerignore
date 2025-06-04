@@ -49,3 +49,5 @@ venv/
 .idea/
 .vscode/
 
+App_Data/
+
