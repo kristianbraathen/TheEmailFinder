@@ -37,7 +37,29 @@ class ProcessStatus(Base):
 # --- INIT FUNCTIONS ---
 
 def create_tables():
-    Base.metadata.create_all(db.engine)
+    try:
+        # Create tables
+        Base.metadata.create_all(db.engine)
+        
+        # Ensure the unique constraint exists
+        with db.engine.connect() as conn:
+            # Check if constraint exists
+            result = conn.execute(text("""
+                SELECT 1 FROM pg_constraint 
+                WHERE conname = 'uq_org_email' 
+                AND conrelid = 'search_results'::regclass
+            """))
+            if not result.scalar():
+                # Add constraint if it doesn't exist
+                conn.execute(text("""
+                    ALTER TABLE search_results 
+                    ADD CONSTRAINT uq_org_email 
+                    UNIQUE ("Org_nr", email)
+                """))
+                conn.commit()
+    except Exception as e:
+        logging.error(f"Error creating tables: {str(e)}")
+        raise
 
 # --- PROCESS STATUS HELPERS ---
 
@@ -120,6 +142,9 @@ def search_emails_and_display(search_provider=None, batch_size=5, force_run=Fals
         return False
         
     try:
+        # Ensure tables and constraints exist
+        create_tables()
+        
         # Ensure process is started and log initial state
         instance.start()  # This sets process_running to True
         if hasattr(search_provider, 'start'):

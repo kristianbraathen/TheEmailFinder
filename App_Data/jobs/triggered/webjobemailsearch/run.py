@@ -2,6 +2,12 @@ import sys
 import os
 import traceback
 import datetime
+
+# Add the local src directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_path = os.path.join(current_dir, 'src')
+sys.path.append(src_path)
+
 from PyFiles.app import app
 
 def write_log(message):
@@ -33,12 +39,6 @@ try:
     write_log(f"Python path: {sys.path}")
     write_log(f"Current directory: {os.getcwd()}")
     write_log(f"Directory contents: {os.listdir('.')}")
-
-    # Add the local src directory to Python path
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    src_path = os.path.join(current_dir, 'src')
-    write_log(f"Adding to path: {src_path}")
-    sys.path.append(src_path)
 
     # Check if src directory exists and list its contents
     if os.path.exists(src_path):
