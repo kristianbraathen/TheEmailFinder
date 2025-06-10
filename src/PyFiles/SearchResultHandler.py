@@ -80,10 +80,14 @@ class SearchResultHandler:
             cls._instance = cls()
         return cls._instance
 
-    def search_emails_and_display(self, batch_size=5, force_run=False):
+    def search_emails_and_display(self, search_provider=None, batch_size=5, force_run=False):
         try:
             if self.process_running and not force_run:
                 self.logger.warning("Process is already running")
+                return False
+
+            if search_provider is None:
+                self.logger.error("No search provider specified")
                 return False
 
             self.process_running = True
@@ -110,14 +114,13 @@ class SearchResultHandler:
 
                     row_id, org_nr, firmanavn = row
                     search_query = f'"{firmanavn}" "Norge"'
-                    google_kse = GoogleKse.get_instance()
-                    search_results = google_kse.search_company(firmanavn)
+                    search_results = search_provider.search_company(firmanavn)
                     all_emails = []
                     
                     for url in search_results:
                         if not self.process_running:
                             break
-                        emails = google_kse.extract_email_selenium(url)
+                        emails = search_provider.extract_email_selenium(url)
                         all_emails.extend(emails)
 
                     unique_emails = set(all_emails)
@@ -147,8 +150,8 @@ class SearchResultHandler:
         finally:
             if not force_run:
                 self.stop()
-                if hasattr(google_kse, 'stop'):
-                    google_kse.stop()
+                if hasattr(search_provider, 'stop'):
+                    search_provider.stop()
 
 # --- FLASK ROUTES ---
 
