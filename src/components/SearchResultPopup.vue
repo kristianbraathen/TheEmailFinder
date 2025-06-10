@@ -81,8 +81,8 @@
                             emails: []
                         };
                     }
-                    // Legg kun til unike e-poster
-                    if (!map[key].emails.includes(result.email)) {
+                    // Only add .no emails
+                    if (!map[key].emails.includes(result.email) && result.email.toLowerCase().endsWith('.no')) {
                         map[key].emails.push(result.email);
                     }
                 });

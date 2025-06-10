@@ -28,7 +28,18 @@ def trigger_webjob_start():
         print("➡️ Headers:", response.headers)
 
         if response.status_code == 202:
-            return jsonify({"status": "WebJob startet"}), 202
+            # Get WebJob status
+            status_url = WEBJOBS_BASE_URL.replace("/run", "")
+            status_response = requests.get(status_url, auth=(WEBJOBS_USER, WEBJOBS_PASS))
+            status_data = status_response.json() if status_response.status_code == 200 else {}
+            
+            return jsonify({
+                "status": "WebJob startet",
+                "webjob_status": status_data.get("status", "Unknown"),
+                "last_run": status_data.get("last_run", "Unknown"),
+                "next_run": status_data.get("next_run", "Unknown"),
+                "run_count": status_data.get("run_count", 0)
+            }), 202
         else:
             return jsonify({
                 "status": "Feil ved start",

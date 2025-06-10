@@ -155,7 +155,7 @@ def search_emails_and_display(batch_size=5):
                     print(f"📧 Found emails: {email_list}")
                     for email in email_list:
                         insert_query = text("""
-                            INSERT INTO search_results ("Org_nr", company_name, email)
+                            INSERT INTO email_search ("Org_nr", company_name, email)
                             VALUES (:org_nr, :company_name, :email)
                         """)
                         db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
@@ -186,30 +186,24 @@ def start_process_google():
             return jsonify({"status": "Prosess kjører allerede"}), 400
 
         process_running = True
-        print(f"🔵 process_running is {process_running}")
         print("Prosess starter...")
 
         def background_search():
-            from src.PyFiles.app import app  # Pass på at dette ikke skaper sirkulær import!
+            from src.PyFiles.app import app
             try:
                 with app.app_context(): 
-                    print("🔵 background_search() started.")
-                    result = search_emails_and_display()
-                    if result:
-                        print("✅ background_search() completed successfully.")
-                    else:
-                        print("⚠️ background_search() encountered an issue.")
+                    search_emails_and_display()
             except Exception as e:
-                print(f"❌ Feil ved prosessstart i background_search(): {str(e)}")
+                print(f"❌ Feil ved prosessstart: {str(e)}")
             finally:
                 global process_running
                 with process_lock:
                     process_running = False
-                print("🔴 background_search() finished. process_running set to False.")
+                print("Prosess avsluttet.")
 
         threading.Thread(target=background_search, daemon=True).start()
 
-    return jsonify({"status": "Prosess startet og kjører i bakgrunnen."}), 200
+    return jsonify({"status": "Prosess startet - kjører i bakgrunnen"}), 200
 
 @api6_blueprint.route('/stop_process_google', methods=['POST'])
 def stop_process_google():

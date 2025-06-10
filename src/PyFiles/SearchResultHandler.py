@@ -4,22 +4,14 @@ from sqlalchemy import Column, Integer, String, UniqueConstraint, text
 from sqlalchemy.ext.declarative import declarative_base
 from .Db import db,get_db_connection
 import psycopg2
+import logging
+from .GoogleKse import GoogleKse
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
 CORS(email_result_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
 
 # --- MODELS ---
-
-class EmailResult(Base):
-    __tablename__ = 'search_results'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    Org_nr = Column(Integer, nullable=False)
-    company_name = Column(String(255), nullable=False)
-    email = Column(String(255), nullable=False)
-
-    __table_args__ = (UniqueConstraint('Org_nr', 'email', name='uq_org_email'),)
-
 
 class ProcessStatus(Base):
     __tablename__ = 'process_status'
@@ -57,85 +49,96 @@ def update_last_processed_id(process_name=PROCESS_NAME_EMAIL_SEARCH, new_id=None
         db.session.add(status)
     db.session.commit()
 
-# --- SEARCH FUNCTION ---
+class SearchResultHandler:
+    _instance = None
+    _initialized = False
 
-def search_emails_and_display(batch_size=5):
-    global process_running
-    try:
-        print(f"🔵 process_running is {process_running}")
-        print("🔵 search_emails_and_display() started.")
-        
-        last_id = get_last_processed_id()
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SearchResultHandler, cls).__new__(cls)
+        return cls._instance
 
-        while True:
-            print(f"🟡 Fetching batch starting from last_id: {last_id}")
-            
-            query = text(f"""
-                SELECT id, "Org_nr", "Firmanavn"
-                FROM imported_table
-                WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL AND id > :last_id
-                ORDER BY id ASC
-                LIMIT :limit
-            """)
-            result = db.session.execute(query, {"last_id": last_id, "limit": batch_size})
-            rows = result.fetchall()
+    def __init__(self):
+        if not self._initialized:
+            self.process_running = False
+            self.logger = logging.getLogger(__name__)
+            self._initialized = True
 
-            if not rows:
-                print("✅ Ingen flere rader å behandle. Exiting loop.")
-                break
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
-            print(f"🟡 Behandler batch med {len(rows)} rader (last_id: {last_id}).")
+    def search_emails_and_display(self, batch_size=5, force_run=False):
+        try:
+            if self.process_running and not force_run:
+                self.logger.warning("Process is already running")
+                return False
 
-            for row in rows:
-                if not process_running:
-                    print("🔴 Prosessen er stoppet av brukeren.")
+            self.process_running = True
+            self.logger.info("Email search process started")
+
+            while True:
+                query = text("""
+                    SELECT id, "Org_nr", "Firmanavn"
+                    FROM imported_table
+                    WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL
+                    ORDER BY id ASC
+                    LIMIT :limit
+                """)
+                result = db.session.execute(query, {"limit": batch_size})
+                rows = result.fetchall()
+
+                if not rows:
+                    self.logger.info("No more companies to process")
                     break
 
-                row_id, org_nr, company_name = row
-                print(f"🔍 Processing org_nr: {org_nr}, company_name: {company_name}")
-
-                search_query = f'"{company_name}" "Norge"'
-                print(f"🔍 Søker med query: {search_query}")
-
-                search_results = google_custom_search(search_query)
-                all_emails = []
-                for url in search_results:
-                    if not process_running:
-                        print("🔴 Prosessen er stoppet av brukeren.")
+                for row in rows:
+                    if not (self.process_running or force_run):
                         break
-                    print(f"🌐 Extracting emails from URL: {url}")
-                    emails = extract_email_selenium(url)
-                    all_emails.extend(emails)
 
-                unique_emails = set(all_emails)
-                email_list = list(unique_emails)
+                    row_id, org_nr, company_name = row
+                    search_query = f'"{company_name}" "Norge"'
+                    google_kse = GoogleKse.get_instance()
+                    search_results = google_kse.search_company(company_name)
+                    all_emails = []
+                    
+                    for url in search_results:
+                        if not self.process_running:
+                            break
+                        emails = google_kse.extract_email_selenium(url)
+                        all_emails.extend(emails)
 
-                if email_list:
-                    print(f"📧 Found emails: {email_list}")
-                    for email in email_list:
-                        insert_query = text("""
-                            INSERT INTO search_results ("Org_nr", company_name, email)
-                            VALUES (:org_nr, :company_name, :email)
-                            ON CONFLICT ("Org_nr", email) DO NOTHING
-                        """)
-                        db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
-                    db.session.commit()
-                    print(f"✅ Emails inserted into database for org_nr: {org_nr}")
+                    unique_emails = set(all_emails)
+                    email_list = list(unique_emails)
 
-                last_id = row_id
-                update_last_processed_id(new_id=last_id)
+                    if email_list:
+                        for email in email_list:
+                            insert_query = text("""
+                                INSERT INTO email_search ("Org_nr", company_name, email)
+                                VALUES (:org_nr, :company_name, :email)
+                                ON CONFLICT ("Org_nr", email) DO NOTHING
+                            """)
+                            db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
+                        db.session.commit()
 
-            if not process_running:
-                print("🔴 Exiting loop as process_running is False.")
-                break
+                if not self.process_running:
+                    break
 
-        print("✅ search_emails_and_display() completed.")
-        return True
+            self.process_running = False
+            return True
 
-    except Exception as e:
-        print(f"❌ Feil i search_emails_and_display(): {str(e)}")
-        db.session.rollback()
-        return False
+        except Exception as e:
+            self.logger.error(f"Error in search process: {str(e)}")
+            db.session.rollback()
+            self.process_running = False
+            return False
+        finally:
+            if not force_run:
+                self.stop()
+                if hasattr(google_kse, 'stop'):
+                    google_kse.stop()
 
 # --- FLASK ROUTES ---
 
@@ -150,13 +153,14 @@ def initialize_email_results():
 @email_result_blueprint.route('/get_email_results', methods=['GET'])
 def get_email_results():
     try:
-        email_results = db.session.query(EmailResult).all()
+        query = text("SELECT id, Org_nr, company_name, email FROM email_search")
+        result = db.session.execute(query)
         results = [{
             'id': r.id,
             'Org_nr': r.Org_nr,
             'company_name': r.company_name,
             'email': r.email
-        } for r in email_results]
+        } for r in result]
         return jsonify(results), 200
     except Exception as e:
         return jsonify({'error': f'Failed to fetch email results: {str(e)}'}), 500
@@ -168,10 +172,11 @@ def delete_stored_result():
     if not org_nr:
         return jsonify({"status": "Feil: Org.nr mangler"}), 400
     try:
-        deleted_rows = db.session.query(EmailResult).filter_by(Org_nr=org_nr).delete()
+        query = text('DELETE FROM email_search WHERE "Org_nr" = :org_nr')
+        result = db.session.execute(query, {"org_nr": org_nr})
         db.session.commit()
-        if deleted_rows:
-            return jsonify({"status": f"Slettet {deleted_rows} resultater for org.nr {org_nr}."})
+        if result.rowcount:
+            return jsonify({"status": f"Slettet {result.rowcount} resultater for org.nr {org_nr}."})
         else:
             return jsonify({"status": f"Ingen rader funnet for org.nr {org_nr}."})
     except Exception as e:
@@ -198,10 +203,9 @@ def update_email():
             (email, str(org_nr))
         )
 
-
         # Slett fra EmailResult (search_result)
         cursor.execute(
-            'DELETE FROM search_results WHERE "Org_nr" = %s',
+            'DELETE FROM email_search WHERE "Org_nr" = %s',
             (org_nr,)
         )
         deleted_rows = cursor.rowcount

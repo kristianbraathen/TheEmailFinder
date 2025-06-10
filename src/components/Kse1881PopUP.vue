@@ -32,12 +32,12 @@
                         "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results"
                     );
 
-                    // Steg 2: Start WebJob-en som gjør e-postsøkene
+                    // Steg 2: Start WebJob-en via webhook
                     const startResponse = await axios.post(
                         "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start"
                     );
 
-                    this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
+                    this.processMessage = "WebJob startet - prosessen kjører i bakgrunnen";
                 } catch (error) {
                     this.processMessage = "Feil under start av prosess/WebJob.";
                     console.error(error);
