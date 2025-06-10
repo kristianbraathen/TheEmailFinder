@@ -6,6 +6,7 @@ from .Db import db,get_db_connection
 import psycopg2
 import logging
 from .GoogleKse import GoogleKse
+from datetime import datetime
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
@@ -18,6 +19,17 @@ class ProcessStatus(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     process_name = Column(String(255), nullable=False, unique=True)
     last_processed_id = Column(Integer, nullable=False, default=0)
+
+class EmailSearch(Base):
+    __tablename__ = 'email_results'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    Org_nr = Column(String(255), nullable=False)
+    Firmanavn = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    __table_args__ = (
+        UniqueConstraint('Org_nr', 'email', name='uix_org_nr_email'),
+    )
 
 # --- INIT FUNCTIONS ---
 
@@ -116,11 +128,11 @@ class SearchResultHandler:
                     if email_list:
                         for email in email_list:
                             insert_query = text("""
-                                INSERT INTO email_search ("Org_nr", company_name, email)
-                                VALUES (:org_nr, :company_name, :email)
+                                INSERT INTO email_results ("Org_nr", "Firmanavn", email)
+                                VALUES (:org_nr, :firmanavn, :email)
                                 ON CONFLICT ("Org_nr", email) DO NOTHING
                             """)
-                            db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
+                            db.session.execute(insert_query, {"org_nr": org_nr, "firmanavn": company_name, "email": email})
                         db.session.commit()
 
                 if not self.process_running:
@@ -153,13 +165,17 @@ def initialize_email_results():
 @email_result_blueprint.route('/get_email_results', methods=['GET'])
 def get_email_results():
     try:
-        query = text("SELECT id, Org_nr, company_name, email FROM email_search")
+        # Ensure table exists
+        create_tables()
+        
+        query = text("SELECT id, Org_nr, Firmanavn, email, created_at FROM email_results")
         result = db.session.execute(query)
         results = [{
             'id': r.id,
             'Org_nr': r.Org_nr,
-            'company_name': r.company_name,
-            'email': r.email
+            'firmanavn': r.Firmanavn,
+            'email': r.email,
+            'created_at': r.created_at.isoformat() if r.created_at else None
         } for r in result]
         return jsonify(results), 200
     except Exception as e:
@@ -172,7 +188,7 @@ def delete_stored_result():
     if not org_nr:
         return jsonify({"status": "Feil: Org.nr mangler"}), 400
     try:
-        query = text('DELETE FROM email_search WHERE "Org_nr" = :org_nr')
+        query = text('DELETE FROM email_results WHERE "Org_nr" = :org_nr')
         result = db.session.execute(query, {"org_nr": org_nr})
         db.session.commit()
         if result.rowcount:
@@ -205,7 +221,7 @@ def update_email():
 
         # Slett fra EmailResult (search_result)
         cursor.execute(
-            'DELETE FROM email_search WHERE "Org_nr" = %s',
+            'DELETE FROM email_results WHERE "Org_nr" = %s',
             (org_nr,)
         )
         deleted_rows = cursor.rowcount

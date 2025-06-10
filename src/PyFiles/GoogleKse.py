@@ -185,10 +185,10 @@ def search_emails_and_display(batch_size=5):
                     print(f"📧 Found emails: {email_list}")
                     for email in email_list:
                         insert_query = text("""
-                            INSERT INTO email_search ("Org_nr", company_name, email)
-                            VALUES (:org_nr, :company_name, :email)
+                            INSERT INTO email_results ("Org_nr", "Firmanavn", email)
+                            VALUES (:org_nr, :firmanavn, :email)
                         """)
-                        db.session.execute(insert_query, {"org_nr": org_nr, "company_name": company_name, "email": email})
+                        db.session.execute(insert_query, {"org_nr": org_nr, "firmanavn": company_name, "email": email})
                     db.session.commit()
                     print(f"✅ Emails inserted into database for org_nr: {org_nr}")
 
