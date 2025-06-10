@@ -171,7 +171,7 @@ def get_email_results():
         results = [{
             'id': r.id,
             'Org_nr': r.Org_nr,
-            'firmanavn': r.Firmanavn,
+            'Firmanavn': r.Firmanavn,
             'email': r.email
         } for r in result]
         return jsonify(results), 200
@@ -200,7 +200,7 @@ def delete_stored_result():
 @email_result_blueprint.route('/update_email', methods=['POST'])
 def update_email():
     data = request.get_json()
-    org_nr = data.get('org_nr')
+    org_nr = data.get('Org_nr')
     email = data.get('email')
 
     if not org_nr or not email:

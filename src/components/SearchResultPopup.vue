@@ -8,7 +8,7 @@
             </div>
 
             <div v-for="group in paginatedResults" :key="group.Org_nr" class="result-card">
-                <h3>{{ group.company_name }} ({{ group.Org_nr }})</h3>
+                <h3>{{ group.Firmanavn }} ({{ group.Org_nr }})</h3>
 
                 <label :for="'emailSelect-' + group.Org_nr">Velg e-post:</label>
                 <select :id="'emailSelect-' + group.Org_nr"
@@ -76,7 +76,7 @@
                     const key = result.Org_nr;
                     if (!map[key]) {
                         map[key] = {
-                            company_name: result.company_name,
+                            Firmanavn: result.Firmanavn,
                             Org_nr: key,
                             emails: []
                         };
@@ -101,6 +101,7 @@
             async fetchEmailResults() {
                 try {
                     const response = await axios.get("https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/get_email_results");
+                    console.log('Email results from API:', response.data);
                     this.results = response.data;
 
                     // Sett default valgt e-post for hver org.nr til første e-post i gruppen
@@ -111,7 +112,7 @@
                         }
                     });
                 } catch (error) {
-                    console.error(error);
+                    console.error('Error fetching email results:', error);
                     alert('Kunne ikke hente e-postresultater.');
                 }
             },
@@ -121,7 +122,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            org_nr: orgNr,
+                            Org_nr: orgNr,
                             email: email
                         })
                     });
@@ -134,7 +135,7 @@
                         alert(data.error || 'Feil ved oppdatering av e-post.');
                     }
                 } catch (error) {
-                    console.error(error);
+                    console.error('Error updating email:', error);
                     alert('Nettverksfeil ved oppdatering av e-post.');
                 }
             },
