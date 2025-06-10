@@ -163,6 +163,19 @@
                         return;
                     }
 
+                    // Remove the item from the results array
+                    this.results = this.results.filter(result => result.Org_nr !== orgNr);
+                    
+                    // Remove from selectedEmails if it exists
+                    if (this.selectedEmails[orgNr]) {
+                        delete this.selectedEmails[orgNr];
+                    }
+
+                    // Reset to first page if current page is empty
+                    if (this.paginatedResults.length === 0 && this.currentPage > 1) {
+                        this.currentPage = 1;
+                    }
+
                     this.$emit('updateResults', orgNr);
                 } catch (error) {
                     alert('Nettverksfeil under sletting.');
