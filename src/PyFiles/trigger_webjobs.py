@@ -2,32 +2,58 @@ from flask import jsonify, Blueprint
 import requests
 import os
 import traceback
+import logging
 
 trigger_webjobs = Blueprint("trigger_webjobs", __name__)
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Kudu API details
 WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch/run"
 
+# Get credentials from environment variables
 WEBJOBS_USER = os.getenv("WEBJOBS_USER")
 WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
 
-STOP_FLAG_FILE = "/app/stop_webjob.flag"  # <-- Endre hvis nødvendig
+# Use the WebJob's directory for the flag file
+WEBJOB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'App_Data', 'jobs', 'triggered', 'webjobemailsearch'))
+STOP_FLAG_FILE = os.path.join(WEBJOB_ROOT, "stop_webjob.flag")
 
 @trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
     try:
-        # Slett gammelt stoppflagg først (start ny runde)
-        if os.path.exists(STOP_FLAG_FILE):
-            os.remove(STOP_FLAG_FILE)
-
-        print(f"Attempting to trigger WebJob at: {WEBJOBS_BASE_URL}")
-        print(f"Using credentials - User: {WEBJOBS_USER}, Pass: {'*' * len(WEBJOBS_PASS) if WEBJOBS_PASS else 'None'}")
+        logger.info("Starting WebJob trigger process...")
         
-        response = requests.post(WEBJOBS_BASE_URL, auth=(WEBJOBS_USER, WEBJOBS_PASS))
-        print("➡️ Statuskode:", response.status_code)
-        print("➡️ Respons:", response.text)
-        print("➡️ Headers:", response.headers)
+        # Check if credentials are available
+        if not WEBJOBS_USER or not WEBJOBS_PASS:
+            logger.error("Missing WebJobs credentials")
+            return jsonify({
+                "status": "Feil ved start",
+                "details": "Mangler WebJobs påloggingsinformasjon"
+            }), 500
 
-        if response.status_code == 202:
+        # Remove old stop flag if it exists
+        if os.path.exists(STOP_FLAG_FILE):
+            try:
+                os.remove(STOP_FLAG_FILE)
+                logger.info("Successfully removed stop flag")
+            except Exception as e:
+                logger.warning(f"Could not remove stop flag: {e}")
+
+        logger.info(f"Attempting to trigger WebJob at: {WEBJOBS_BASE_URL}")
+        
+        # Trigger the WebJob
+        response = requests.post(
+            WEBJOBS_BASE_URL,
+            auth=(WEBJOBS_USER, WEBJOBS_PASS),
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        logger.info(f"WebJob trigger response - Status: {response.status_code}, Text: {response.text}")
+
+        # Both 200 and 202 are valid success responses for WebJob triggers
+        if response.status_code in [200, 202]:
             # Get WebJob status
             status_url = WEBJOBS_BASE_URL.replace("/run", "")
             status_response = requests.get(status_url, auth=(WEBJOBS_USER, WEBJOBS_PASS))
@@ -38,31 +64,41 @@ def trigger_webjob_start():
                 "webjob_status": status_data.get("status", "Unknown"),
                 "last_run": status_data.get("last_run", "Unknown"),
                 "next_run": status_data.get("next_run", "Unknown"),
-                "run_count": status_data.get("run_count", 0)
-            }), 202
+                "run_count": status_data.get("run_count", 0),
+                "response_code": response.status_code
+            }), 200
         else:
+            logger.error(f"Failed to trigger WebJob: {response.status_code} - {response.text}")
             return jsonify({
                 "status": "Feil ved start",
                 "status_code": response.status_code,
-                "details": response.text,
-                "headers": dict(response.headers)
+                "details": response.text
             }), 500
+
     except Exception as e:
-        print(f"Exception details: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Exception in trigger_webjob_start: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             "status": "Feil under start",
-            "details": str(e),
-            "traceback": traceback.format_exc()
+            "details": str(e)
         }), 500
 
 @trigger_webjobs.route("/stop", methods=["POST"])
 def trigger_webjob_stop():
     try:
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(STOP_FLAG_FILE), exist_ok=True)
+        
+        # Set the stop flag
         with open(STOP_FLAG_FILE, "w") as f:
             f.write("STOP")
+        
+        logger.info("Stop flag set successfully")
         return jsonify({"status": "Stoppflagg satt – WebJob bør avslutte snart"}), 200
     except Exception as e:
-        print(f"Stop exception: {str(e)}")
-        print(f"Stop traceback: {traceback.format_exc()}")
-        return jsonify({"status": "Kunne ikke skrive stoppflagg", "details": str(e)}), 500
+        logger.error(f"Error setting stop flag: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            "status": "Kunne ikke skrive stoppflagg",
+            "details": str(e)
+        }), 500
