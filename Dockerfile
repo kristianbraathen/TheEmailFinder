@@ -43,13 +43,9 @@ RUN mkdir -p /home/LogFiles && \
 # Copy the entire project
 COPY . /app
 
-# Set up permissions
-RUN chmod 777 /home/LogFiles && \
-    chmod 777 /app/App_Data/jobs/triggered && \
-    find /app -type f -name "*.sh" -exec chmod +x {} \; && \
-    find /app -type f -name "*.sh" -exec dos2unix {} \; && \
-    chmod -R 777 /app/App_Data/jobs/triggered/webjobemailsearch && \
-    chmod -R 777 /app/App_Data/jobs/triggered/testjob
+# Set up permissions - minimal version for manual zip uploads
+RUN find /app -type f -name "*.sh" -exec chmod +x {} \; && \
+    find /app -type f -name "*.sh" -exec dos2unix {} \;
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
