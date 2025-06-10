@@ -43,11 +43,17 @@ def trigger_webjob_start():
 
         logger.info(f"Attempting to trigger WebJob at: {WEBJOBS_BASE_URL}")
         
-        # Trigger the WebJob
+        # Trigger the WebJob with proper headers and empty body
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
         response = requests.post(
             WEBJOBS_BASE_URL,
             auth=(WEBJOBS_USER, WEBJOBS_PASS),
-            headers={'Content-Type': 'application/json'}
+            headers=headers,
+            json={}  # Empty JSON body as required by the API
         )
         
         logger.info(f"WebJob trigger response - Status: {response.status_code}, Text: {response.text}")
@@ -56,7 +62,11 @@ def trigger_webjob_start():
         if response.status_code in [200, 202]:
             # Get WebJob status
             status_url = WEBJOBS_BASE_URL.replace("/run", "")
-            status_response = requests.get(status_url, auth=(WEBJOBS_USER, WEBJOBS_PASS))
+            status_response = requests.get(
+                status_url, 
+                auth=(WEBJOBS_USER, WEBJOBS_PASS),
+                headers={'Accept': 'application/json'}
+            )
             status_data = status_response.json() if status_response.status_code == 200 else {}
             
             return jsonify({
