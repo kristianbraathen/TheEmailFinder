@@ -45,6 +45,36 @@ chrome_options.add_argument("--disable-session-crashed-bubble")
 API_KEY = "AIzaSyDX42Nl71H81zGkm8_4WDzkLv26N9Vpn_E"
 CSE_ID = "05572ab81b7254d58"
 
+class KseApi:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(KseApi, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if not self._initialized:
+            self.process_running = False
+            self._initialized = True
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def search_company(self, company_name):
+        search_query = f'"{company_name}" "Norge"'
+        return google_custom_search(search_query)
+
+    def extract_email_selenium(self, url):
+        return extract_email_selenium(url)
+
+    def stop(self):
+        self.process_running = False
+
 def google_custom_search(query):
     url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={CSE_ID}&gl=no&lr=lang:no&num=3"
     response = requests.get(url)

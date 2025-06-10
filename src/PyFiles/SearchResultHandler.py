@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from .Db import db,get_db_connection
 import psycopg2
 import logging
-from .GoogleKse import GoogleKse
+from GoogleKse import GoogleKse
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
