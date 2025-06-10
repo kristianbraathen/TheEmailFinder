@@ -108,10 +108,10 @@ class SearchResultHandler:
                     if not (self.process_running or force_run):
                         break
 
-                    row_id, org_nr, company_name = row
-                    search_query = f'"{company_name}" "Norge"'
+                    row_id, org_nr, firmanavn = row
+                    search_query = f'"{firmanavn}" "Norge"'
                     google_kse = GoogleKse.get_instance()
-                    search_results = google_kse.search_company(company_name)
+                    search_results = google_kse.search_company(firmanavn)
                     all_emails = []
                     
                     for url in search_results:
@@ -130,7 +130,7 @@ class SearchResultHandler:
                                 VALUES (:org_nr, :firmanavn, :email)
                                 ON CONFLICT ("Org_nr", email) DO NOTHING
                             """)
-                            db.session.execute(insert_query, {"org_nr": org_nr, "firmanavn": company_name, "email": email})
+                            db.session.execute(insert_query, {"org_nr": org_nr, "firmanavn": firmanavn, "email": email})
                         db.session.commit()
 
                 if not self.process_running:
@@ -166,7 +166,7 @@ def get_email_results():
         # Ensure table exists
         create_tables()
         
-        query = text("SELECT id, Org_nr, Firmanavn, email FROM email_results")
+        query = text('SELECT id, "Org_nr", "Firmanavn", email FROM email_results')
         result = db.session.execute(query)
         results = [{
             'id': r.id,
