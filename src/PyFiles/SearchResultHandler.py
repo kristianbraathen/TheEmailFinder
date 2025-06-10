@@ -6,7 +6,6 @@ from .Db import db,get_db_connection
 import psycopg2
 import logging
 from .GoogleKse import GoogleKse
-from datetime import datetime
 
 Base = declarative_base()
 email_result_blueprint = Blueprint('email_result', __name__)
@@ -26,7 +25,6 @@ class EmailSearch(Base):
     Org_nr = Column(String(255), nullable=False)
     Firmanavn = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     __table_args__ = (
         UniqueConstraint('Org_nr', 'email', name='uix_org_nr_email'),
     )
@@ -168,14 +166,13 @@ def get_email_results():
         # Ensure table exists
         create_tables()
         
-        query = text("SELECT id, Org_nr, Firmanavn, email, created_at FROM email_results")
+        query = text("SELECT id, Org_nr, Firmanavn, email FROM email_results")
         result = db.session.execute(query)
         results = [{
             'id': r.id,
             'Org_nr': r.Org_nr,
             'firmanavn': r.Firmanavn,
-            'email': r.email,
-            'created_at': r.created_at.isoformat() if r.created_at else None
+            'email': r.email
         } for r in result]
         return jsonify(results), 200
     except Exception as e:
