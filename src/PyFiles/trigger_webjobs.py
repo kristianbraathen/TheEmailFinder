@@ -46,15 +46,8 @@ def trigger_webjob_start():
         provider = request.json.get('provider', 'googlekse')
         logger.info(f"Using provider: {provider}")
         
-        # Set the appropriate environment variable based on provider
-        env_var = ""
-        if provider == 'googlekse':
-            env_var = "GOOGLEKSE_POPUP"
-        elif provider == 'kseapi':
-            env_var = "KSEAPI_POPUP"
-        elif provider == 'kse1881':
-            env_var = "KSE1881_POPUP"
-        else:
+        # Validate provider
+        if provider not in ['googlekse', 'kseapi', 'kse1881']:
             logger.error(f"Invalid provider: {provider}")
             return jsonify({
                 "status": "Feil ved start",
@@ -70,9 +63,7 @@ def trigger_webjob_start():
         # Format the request body according to Azure WebJobs API
         body = {
             "properties": {
-                "environment_variables": {
-                    env_var: "true"
-                }
+                "arguments": provider  # Pass provider directly as argument
             }
         }
         
