@@ -46,24 +46,7 @@ def trigger_webjob_start():
         provider = request.json.get('provider', 'googlekse')
         logger.info(f"Using provider: {provider}")
         
-        # Set up environment variables based on provider
-        env_vars = {
-            'GOOGLEKSE_POPUP': 'false',
-            'KSEAPI_POPUP': 'false',
-            'KSE1881_POPUP': 'false'
-        }
-        
-        # Set the appropriate flag based on provider
-        if provider == 'googlekse':
-            env_vars['GOOGLEKSE_POPUP'] = 'true'
-        elif provider == 'kseapi':
-            env_vars['KSEAPI_POPUP'] = 'true'
-        elif provider == 'kse1881':
-            env_vars['KSE1881_POPUP'] = 'true'
-            
-        logger.info(f"Setting environment variables: {env_vars}")
-        
-        # Trigger the WebJob with proper headers and environment variables
+        # Trigger the WebJob with proper headers
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -72,9 +55,7 @@ def trigger_webjob_start():
         # Format the request body according to Azure WebJobs API
         body = {
             "properties": {
-                "settings": {
-                    "environment_variables": env_vars
-                }
+                "arguments": provider
             }
         }
         
