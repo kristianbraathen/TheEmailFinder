@@ -1,4 +1,4 @@
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 import requests
 import os
 import traceback
@@ -42,7 +42,25 @@ def trigger_webjob_start():
 
         logger.info(f"Attempting to trigger WebJob at: {WEBJOBS_BASE_URL}")
         
-        # Trigger the WebJob with proper headers and empty body
+        # Get provider from request
+        provider = request.json.get('provider', 'googlekse')
+        logger.info(f"Using provider: {provider}")
+        
+        # Set environment variables based on provider
+        env_vars = {
+            'GOOGLEKSE_POPUP': 'false',
+            'KSEAPI_POPUP': 'false',
+            'KSE1881_POPUP': 'false'
+        }
+        
+        if provider == 'googlekse':
+            env_vars['GOOGLEKSE_POPUP'] = 'true'
+        elif provider == 'kseapi':
+            env_vars['KSEAPI_POPUP'] = 'true'
+        elif provider == 'kse1881':
+            env_vars['KSE1881_POPUP'] = 'true'
+            
+        # Trigger the WebJob with proper headers and environment variables
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -52,7 +70,7 @@ def trigger_webjob_start():
             WEBJOBS_BASE_URL,
             auth=(WEBJOBS_USER, WEBJOBS_PASS),
             headers=headers,
-            json={}  # Empty JSON body as required by the API
+            json=env_vars  # Send environment variables in request body
         )
         
         logger.info(f"WebJob trigger response - Status: {response.status_code}, Text: {response.text}")

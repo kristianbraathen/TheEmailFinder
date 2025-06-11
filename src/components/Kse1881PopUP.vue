@@ -34,7 +34,8 @@
 
                     // Steg 2: Start WebJob-en via webhook
                     const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start",
+                        { provider: 'kse1881' }
                     );
 
                     this.processMessage = "WebJob startet - prosessen kjører i bakgrunnen";

@@ -38,7 +38,8 @@
 
                     // Steg 2: Start WebJob-en som gjør e-postsøkene
                     const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start",
+                        { provider: 'googlekse' }
                     );
 
                     this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
