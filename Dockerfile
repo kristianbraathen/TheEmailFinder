@@ -48,7 +48,7 @@ RUN find /app -type f -name "*.sh" -exec chmod +x {} \; && \
     find /app -type f -name "*.sh" -exec dos2unix {} \;
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r /app/src/PyFiles/requirements.txt \
+RUN pip install -r /app/src/PyFiles/requirements.txt \
     && pip install pyodbc gunicorn chromedriver-autoinstaller
 
 # Copy frontend build
