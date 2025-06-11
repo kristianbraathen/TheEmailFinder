@@ -68,7 +68,11 @@ def trigger_webjob_start():
         
         # Format the request body according to Azure WebJobs API
         body = {
-            "environment_variables": env_vars
+            "properties": {
+                "settings": {
+                    "environment_variables": env_vars
+                }
+            }
         }
         
         logger.info(f"Sending request with body: {body}")
