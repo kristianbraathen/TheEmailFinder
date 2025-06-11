@@ -97,7 +97,9 @@ class SearchResultHandler:
                 query = text("""
                     SELECT id, "Org_nr", "Firmanavn"
                     FROM imported_table
-                    WHERE "Status" = 'aktiv selskap' AND "E_post_1" IS NULL
+                    WHERE "Status" = 'aktiv selskap' 
+                    AND ischecked = false
+                    AND "E_post_1" IS NULL
                     ORDER BY id ASC
                     LIMIT :limit
                 """)
@@ -134,6 +136,14 @@ class SearchResultHandler:
                                 ON CONFLICT ("Org_nr", email) DO NOTHING
                             """)
                             db.session.execute(insert_query, {"org_nr": org_nr, "firmanavn": firmanavn, "email": email})
+                        
+                        # Mark the company as checked after processing
+                        update_query = text("""
+                            UPDATE imported_table 
+                            SET ischecked = true 
+                            WHERE id = :id
+                        """)
+                        db.session.execute(update_query, {"id": row_id})
                         db.session.commit()
 
                 if not self.process_running:

@@ -48,7 +48,9 @@ def export_to_excel():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"Behandlet Liste_{timestamp}.xlsx"
 
-        cursor.execute("DROP TABLE IF EXISTS imported_table") # Slett alle rader fra tabellen
+        # Drop both tables after successful export
+        cursor.execute("DROP TABLE IF EXISTS imported_table")  # Drop imported_table
+        cursor.execute("DROP TABLE IF EXISTS email_results")   # Drop email_results table
         conn.commit()  # Bekreft endringene i databasen
 
         return send_file(

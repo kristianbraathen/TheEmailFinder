@@ -7,7 +7,7 @@ import traceback
 from sqlalchemy import create_engine, inspect, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from .Db import db
 import re
 
@@ -48,6 +48,7 @@ def create_dynamic_model(table_name, headers):
     columns = {
         '__tablename__': table_name,
         'id': Column(Integer, primary_key=True, autoincrement=True),  # Auto-generated primary key
+        'ischecked': Column(Boolean, default=False),  # Add ischecked column with default False
     }
 
     for header, sanitized_header in zip(headers, sanitized_headers):
