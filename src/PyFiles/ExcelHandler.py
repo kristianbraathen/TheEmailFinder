@@ -10,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean
 from .Db import db
 import re
+import logging
 
 
 Base = declarative_base()
@@ -132,3 +133,38 @@ def upload_excel():
         print(f'Error processing file: {e}')
         traceback.print_exc()
         return jsonify({'error': 'Failed to process the Excel file'}), 500
+
+class ExcelHandler:
+    def __init__(self):
+        self.engine = None
+        self.Session = None
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("ExcelHandler initialized")
+    
+    def get_dynamic_model(self):
+        """Get the dynamic model for imported_table"""
+        return type('ImportedTable', (Base,), {
+            '__tablename__': 'imported_table',
+            'id': Column(Integer, primary_key=True),
+            'Org_nr': Column(String(50)),
+            'Firmanavn': Column(String(255)),
+            'ischecked': Column(Boolean, default=False)
+        })
+
+    def initialize_db(self):
+        """Initialize database connection"""
+        try:
+            if not self.engine:
+                self.engine = db.engine
+                self.Session = sessionmaker(bind=self.engine)
+                Base.metadata.create_all(self.engine)  # This will create all tables
+                self.logger.info("Database connection initialized")
+                
+                # Create imported_table if it doesn't exist
+                ImportedTable = self.get_dynamic_model()
+                ImportedTable.__table__.create(self.engine)
+                self.logger.info("ExcelHandler initialized successfully")
+                
+        except Exception as e:
+            self.logger.error(f"Error initializing database: {str(e)}")
+            raise

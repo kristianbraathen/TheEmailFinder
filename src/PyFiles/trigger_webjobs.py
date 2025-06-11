@@ -16,9 +16,8 @@ WEBJOBS_BASE_URL = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.az
 WEBJOBS_USER = os.getenv("WEBJOBS_USER")
 WEBJOBS_PASS = os.getenv("WEBJOBS_PASS")
 
-# Use the WebJob's directory for the flag file
-WEBJOB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'App_Data', 'jobs', 'triggered', 'webjobemailsearch'))
-STOP_FLAG_FILE = os.path.join(WEBJOB_ROOT, "stop_webjob.flag")
+# Use the current working directory for the flag file
+STOP_FLAG_FILE = os.path.join(os.getcwd(), "stop_webjob.flag")
 
 @trigger_webjobs.route("/start", methods=["POST"])
 def trigger_webjob_start():
@@ -96,14 +95,11 @@ def trigger_webjob_start():
 @trigger_webjobs.route("/stop", methods=["POST"])
 def trigger_webjob_stop():
     try:
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(STOP_FLAG_FILE), exist_ok=True)
-        
-        # Set the stop flag
+        # Set the stop flag in the current directory
         with open(STOP_FLAG_FILE, "w") as f:
             f.write("STOP")
         
-        logger.info("Stop flag set successfully")
+        logger.info(f"Stop flag set successfully at {STOP_FLAG_FILE}")
         return jsonify({"status": "Stoppflagg satt – WebJob bør avslutte snart"}), 200
     except Exception as e:
         logger.error(f"Error setting stop flag: {str(e)}")
