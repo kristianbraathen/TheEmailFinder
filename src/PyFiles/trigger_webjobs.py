@@ -55,7 +55,7 @@ def trigger_webjob_start():
         # Format the request body according to Azure WebJobs API
         body = {
             "properties": {
-                "arguments": provider
+                "arguments": f"--provider {provider}"
             }
         }
         
