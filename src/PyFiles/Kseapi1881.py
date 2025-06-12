@@ -11,7 +11,7 @@ from threading import Lock
 import chromedriver_autoinstaller
 import os
 import threading
-from .Db import db
+from src.PyFiles.Db import db
 
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
