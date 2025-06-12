@@ -1,7 +1,7 @@
 <template>
     <div v-if="isVisible" class="popup-overlay">
         <div class="popup-content">
-            <h2>Finn e-poster fra 1881</h2>
+            <h2>Finn e-poster fra KSE 1881</h2>
             <button @click="startProcess">Start Prosessen</button>
             <p v-if="processMessage">{{ processMessage }}</p>
             <div class="control-buttons">
@@ -34,7 +34,14 @@
 
                     // Steg 2: Start WebJob-en via webhook
                     const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kse1881/run"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kse1881/run",
+                        {},
+                        {
+                            auth: {
+                                username: 'WEBJOBS_USER',
+                                password: 'WEBJOBS_PASS'
+                            }
+                        }
                     );
 
                     this.processMessage = "WebJob startet - prosessen kjører i bakgrunnen";
@@ -46,7 +53,14 @@
             async stopProcess() {
                 try {
                     const response = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kse1881/stop"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kse1881/stop",
+                        {},
+                        {
+                            auth: {
+                                username: 'WEBJOBS_USER',
+                                password: 'WEBJOBS_PASS'
+                            }
+                        }
                     );
                     this.processMessage = response.data.status;
                 } catch (error) {
