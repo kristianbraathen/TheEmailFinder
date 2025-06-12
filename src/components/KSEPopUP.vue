@@ -34,8 +34,7 @@
 
                     // Steg 2: Start WebJob-en via webhook
                     const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start",
-                        { provider: 'kseapi' }
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kseapi/run"
                     );
 
                     this.processMessage = "WebJob startet - prosessen kjører i bakgrunnen";
@@ -47,7 +46,7 @@
             async stopProcess() {
                 try {
                     const response = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/stop"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kseapi/stop"
                     );
                     this.processMessage = response.data.status;
                 } catch (error) {

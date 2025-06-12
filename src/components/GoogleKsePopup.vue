@@ -38,8 +38,7 @@
 
                     // Steg 2: Start WebJob-en som gjør e-postsøkene
                     const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/start",
-                        { provider: 'googlekse' }
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/run"
                     );
 
                     this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
@@ -55,7 +54,7 @@
                 this.processMessage = "";
                 try {
                     const stopResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/stop"
+                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/stop"
                     );
 
                     this.processMessage = stopResponse.data.status || "Stoppflagg satt – WebJob bør avslutte snart.";
