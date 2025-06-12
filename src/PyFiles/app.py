@@ -12,7 +12,7 @@ from .ExcelHandler import upload_blueprint
 from .DbToExcel import download_blueprint
 from .GoogleKse import api6_blueprint
 from .SearchResultHandler import email_result_blueprint
-from .trigger_webjobs import trigger_webjobs
+
 
 
 # Global UnicodeDecodeError handling
