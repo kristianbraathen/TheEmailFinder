@@ -58,7 +58,16 @@ class KseApi:
     def __init__(self):
         if not self._initialized:
             self.process_running = False
+            self._provider_type = None
             self._initialized = True
+
+    @property
+    def provider_type(self):
+        return self._provider_type
+
+    @provider_type.setter
+    def provider_type(self, value):
+        self._provider_type = value
 
     @classmethod
     def get_instance(cls):
@@ -67,6 +76,8 @@ class KseApi:
         return cls._instance
 
     def search_company(self, company_name):
+        if not self._provider_type:
+            raise ValueError("Provider type not set. Please set provider_type before searching.")
         search_query = f'"{company_name}" "Norge"'
         return google_custom_search(search_query)
 

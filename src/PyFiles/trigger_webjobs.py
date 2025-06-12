@@ -63,7 +63,7 @@ def trigger_webjob_start():
         # Format the request body according to Azure WebJobs API
         body = {
             "properties": {
-                "arguments": provider  # Pass provider directly as argument
+                "arguments": f"--provider {provider}"  # Pass as command line argument
             }
         }
         

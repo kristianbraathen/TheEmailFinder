@@ -11,19 +11,24 @@ from threading import Lock
 import chromedriver_autoinstaller
 import os
 import threading
-from .Db import db  # Added db import
+from .Db import db
 
 api5_blueprint = Blueprint('api5', __name__)
 CORS(api5_blueprint, origins=["https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net"])
+
 process_lock = Lock()
-process_running = True  # Changed to True by default
+process_running = False
 connection_string = os.getenv('DATABASE_CONNECTION_STRING')
 
-chromedriver_autoinstaller.install()
-driver_path = os.getenv('CHROMEDRIVER_PATH') or chromedriver_autoinstaller.install()
-chrome_service = Service(driver_path)
+# Selenium config
 chrome_options = Options()
+if os.path.exists("/usr/bin/google-chrome"):
+    chrome_options.binary_location = "/usr/bin/google-chrome"
+else:
+    chrome_options.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+
 chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--remote-debugging-port=9222")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-extensions")
@@ -39,7 +44,7 @@ chrome_options.add_argument("--disable-default-apps")
 chrome_options.add_argument("--disable-session-crashed-bubble")
 
 API_KEY = "AIzaSyAykkpA2kR9UWYz5TkjjTdLzgr4ek3HDLQ"
-CSE_ID = "432c6f0a821194e10"
+CSE_ID = "432c6f0a821194e10"  # Kseapi1881 specific CSE ID
 
 class Kseapi1881:
     _instance = None
@@ -53,7 +58,16 @@ class Kseapi1881:
     def __init__(self):
         if not self._initialized:
             self.process_running = False
+            self._provider_type = None
             self._initialized = True
+
+    @property
+    def provider_type(self):
+        return self._provider_type
+
+    @provider_type.setter
+    def provider_type(self, value):
+        self._provider_type = value
 
     @classmethod
     def get_instance(cls):
@@ -62,6 +76,8 @@ class Kseapi1881:
         return cls._instance
 
     def search_company(self, company_name):
+        if not self._provider_type:
+            raise ValueError("Provider type not set. Please set provider_type before searching.")
         search_query = f'"{company_name}" "Norge"'
         return google_custom_search(search_query)
 
@@ -76,8 +92,7 @@ def google_custom_search(query):
     response = requests.get(url)
     if response.status_code == 200:
         search_results = response.json()
-        results = [item["link"] for item in search_results.get("items", [])]
-        return results
+        return [item["link"] for item in search_results.get("items", [])]
     else:
         print(f"Feil ved Google API: {response.status_code} - {response.text}")
         return []
