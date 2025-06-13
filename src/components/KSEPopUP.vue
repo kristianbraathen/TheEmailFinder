@@ -38,8 +38,8 @@
                         {},
                         {
                             auth: {
-                                username: 'WEBJOBS_USER',
-                                password: 'WEBJOBS_PASS'
+                                username: process.env.VUE_APP_WEBJOBS_USER,
+                                password: process.env.VUE_APP_WEBJOBS_PASS
                             }
                         }
                     );
@@ -57,8 +57,8 @@
                         {},
                         {
                             auth: {
-                                username: 'WEBJOBS_USER',
-                                password: 'WEBJOBS_PASS'
+                                username: process.env.VUE_APP_WEBJOBS_USER,
+                                password: process.env.VUE_APP_WEBJOBS_PASS
                             }
                         }
                     );
