@@ -58,7 +58,6 @@ COPY --from=frontend /frontend/dist/ /app/dist/
 ENV CHROME_BIN="/usr/bin/google-chrome"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 ENV PORT=80
-ENV PYTHONPATH=/app/src:/app/src/PyFiles
 ENV WEBSITE_HOSTNAME=localhost
 ENV WEBSITE_SITE_NAME=webjobemailsearch
 ENV WEBSITE_INSTANCE_ID=local
