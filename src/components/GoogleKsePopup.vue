@@ -24,59 +24,47 @@
             return {
                 processMessage: "",
                 loading: false,
+                isLoading: false,
+                error: null,
+                isRunning: false,
             };
         },
         methods: {
             async startProcess() {
-                this.loading = true;
-                this.processMessage = "";
                 try {
-                    // Steg 1: Klargjør databasen/tabellen for nye resultater
-                    await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results"
-                    );
-
-                    // Steg 2: Start WebJob-en som gjør e-postsøkene
-                    const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/run",
-                        {},
-                        {
-                            auth: {
-                                username: process.env.VUE_APP_WEBJOBS_USER,
-                                password: process.env.VUE_APP_WEBJOBS_PASS
-                            }
-                        }
-                    );
-
-                    this.processMessage = startResponse.data.status || "WebJob startet etter initialisering.";
+                    this.isLoading = true;
+                    this.error = null;
+                    
+                    // Initialize email results
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results');
+                    
+                    // Start the webjob through our backend
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/googlekse/start');
+                    
+                    this.isRunning = true;
+                    this.startPolling();
                 } catch (error) {
-                    this.processMessage = "Feil under start av prosess/WebJob.";
-                    console.error(error);
+                    console.error('Error starting process:', error);
+                    this.error = error.response?.data?.error || 'Failed to start process';
                 } finally {
-                    this.loading = false;
+                    this.isLoading = false;
                 }
             },
             async stopProcess() {
-                this.loading = true;
-                this.processMessage = "";
                 try {
-                    const stopResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/stop",
-                        {},
-                        {
-                            auth: {
-                                username: process.env.VUE_APP_WEBJOBS_USER,
-                                password: process.env.VUE_APP_WEBJOBS_PASS
-                            }
-                        }
-                    );
-
-                    this.processMessage = stopResponse.data.status || "Stoppflagg satt – WebJob bør avslutte snart.";
+                    this.isLoading = true;
+                    this.error = null;
+                    
+                    // Stop the webjob through our backend
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/googlekse/stop');
+                    
+                    this.isRunning = false;
+                    this.stopPolling();
                 } catch (error) {
-                    this.processMessage = "Feil under stopp av WebJob.";
-                    console.error(error);
+                    console.error('Error stopping process:', error);
+                    this.error = error.response?.data?.error || 'Failed to stop process';
                 } finally {
-                    this.loading = false;
+                    this.isLoading = false;
                 }
             },
             closePopup() {

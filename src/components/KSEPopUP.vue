@@ -22,50 +22,47 @@
         data() {
             return {
                 processMessage: "",
+                isLoading: false,
+                error: null,
+                isRunning: false,
             };
         },
         methods: {
             async startProcess() {
                 try {
-                    // Steg 1: Klargjør databasen/tabellen for nye resultater
-                    await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results"
-                    );
-
-                    // Steg 2: Start WebJob-en via webhook
-                    const startResponse = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kseapi/run",
-                        {},
-                        {
-                            auth: {
-                                username: process.env.VUE_APP_WEBJOBS_USER,
-                                password: process.env.VUE_APP_WEBJOBS_PASS
-                            }
-                        }
-                    );
-
-                    this.processMessage = "WebJob startet - prosessen kjører i bakgrunnen";
+                    this.isLoading = true;
+                    this.error = null;
+                    
+                    // Initialize email results
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results');
+                    
+                    // Start the webjob through our backend
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/kseapi/start');
+                    
+                    this.isRunning = true;
+                    this.startPolling();
                 } catch (error) {
-                    this.processMessage = "Feil under start av prosess/WebJob.";
-                    console.error(error);
+                    console.error('Error starting process:', error);
+                    this.error = error.response?.data?.error || 'Failed to start process';
+                } finally {
+                    this.isLoading = false;
                 }
             },
             async stopProcess() {
                 try {
-                    const response = await axios.post(
-                        "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-kseapi/stop",
-                        {},
-                        {
-                            auth: {
-                                username: process.env.VUE_APP_WEBJOBS_USER,
-                                password: process.env.VUE_APP_WEBJOBS_PASS
-                            }
-                        }
-                    );
-                    this.processMessage = response.data.status;
+                    this.isLoading = true;
+                    this.error = null;
+                    
+                    // Stop the webjob through our backend
+                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/kseapi/stop');
+                    
+                    this.isRunning = false;
+                    this.stopPolling();
                 } catch (error) {
-                    this.processMessage = "Feil under stopp av prosess.";
-                    console.error(error);
+                    console.error('Error stopping process:', error);
+                    this.error = error.response?.data?.error || 'Failed to stop process';
+                } finally {
+                    this.isLoading = false;
                 }
             },
             closePopup() {
