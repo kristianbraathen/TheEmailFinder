@@ -31,9 +31,11 @@ def start_googlekse():
 @trigger_webjobs.route('/googlekse/stop', methods=['POST'])
 def stop_googlekse():
     try:
-        response = requests.post(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/stop",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+        # Create stop flag file
+        response = requests.put(
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/settings",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS),
+            json={"is_singleton": True}
         )
         
         if response.status_code == 200:
@@ -64,9 +66,11 @@ def start_kseapi():
 @trigger_webjobs.route('/kseapi/stop', methods=['POST'])
 def stop_kseapi():
     try:
-        response = requests.post(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-kseapi/stop",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+        # Create stop flag file
+        response = requests.put(
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-kseapi/settings",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS),
+            json={"is_singleton": True}
         )
         
         if response.status_code == 200:
@@ -97,9 +101,11 @@ def start_kse1881():
 @trigger_webjobs.route('/kse1881/stop', methods=['POST'])
 def stop_kse1881():
     try:
-        response = requests.post(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-kse1881/stop",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+        # Create stop flag file
+        response = requests.put(
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-kse1881/settings",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS),
+            json={"is_singleton": True}
         )
         
         if response.status_code == 200:
