@@ -33,9 +33,6 @@
                     this.isLoading = true;
                     this.error = null;
                     
-                    // Initialize email results
-                    await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/initialize-email-results');
-                    
                     // Start the webjob through our backend
                     await axios.post('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/kseapi/start');
                     
