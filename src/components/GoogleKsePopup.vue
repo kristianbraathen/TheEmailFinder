@@ -27,6 +27,7 @@
                 isLoading: false,
                 error: null,
                 isRunning: false,
+                pollInterval: null
             };
         },
         methods: {
@@ -65,9 +66,39 @@
                 }
             },
             closePopup() {
+                this.stopPolling();
                 this.$emit("close");
             },
+            startPolling() {
+                this.pollInterval = setInterval(async () => {
+                    try {
+                        const response = await axios.get('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/googlekse/status');
+                        if (response.data.running) {
+                            this.processMessage = "Prosessen kjører...";
+                            this.loading = true;
+                        } else {
+                            this.processMessage = "Prosessen er ferdig";
+                            this.loading = false;
+                            this.stopPolling();
+                        }
+                    } catch (error) {
+                        console.error('Error polling status:', error);
+                        this.processMessage = "Feil ved sjekk av status";
+                        this.loading = false;
+                        this.stopPolling();
+                    }
+                }, 3000); // Poll every 3 seconds
+            },
+            stopPolling() {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+            }
         },
+        beforeDestroy() {
+            this.stopPolling();
+        }
     };
 </script>
 <style scoped>
