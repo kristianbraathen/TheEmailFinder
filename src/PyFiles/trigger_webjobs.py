@@ -31,11 +31,10 @@ def start_googlekse():
 @trigger_webjobs.route('/googlekse/stop', methods=['POST'])
 def stop_googlekse():
     try:
-        # Create stop flag file
-        response = requests.put(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/settings",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS),
-            json={"is_singleton": True}
+        # Stop the webjob
+        response = requests.post(
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/stop",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS)
         )
         
         if response.status_code == 200:
