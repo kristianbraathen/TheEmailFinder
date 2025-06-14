@@ -81,8 +81,8 @@
                             emails: []
                         };
                     }
-                    // Only add .no emails
-                    if (!map[key].emails.includes(result.email) && result.email.toLowerCase().endsWith('.no')) {
+                    // Add all emails without filtering, but check if email exists
+                    if (result.email && !map[key].emails.includes(result.email)) {
                         map[key].emails.push(result.email);
                     }
                 });
