@@ -26,4 +26,24 @@ def initialize_email_results():
         EmailResult.__table__.create(db.engine, checkfirst=True)
         return jsonify({"status": "success", "message": "Tables initialized"}), 200
     except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@email_result_blueprint.route('/get_email_results', methods=['GET'])
+def get_email_results():
+    try:
+        results = db.session.query(EmailResult).order_by(EmailResult.Org_nr).all()
+        
+        # Group results by Org_nr
+        grouped_results = {}
+        for result in results:
+            if result.Org_nr not in grouped_results:
+                grouped_results[result.Org_nr] = {
+                    'Org_nr': result.Org_nr,
+                    'Firmanavn': result.Firmanavn,
+                    'emails': []
+                }
+            grouped_results[result.Org_nr]['emails'].append(result.email)
+        
+        return jsonify(list(grouped_results.values())), 200
+    except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500 

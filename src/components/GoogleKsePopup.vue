@@ -74,16 +74,16 @@
                     try {
                         const response = await axios.get('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/trigger_webjobs/googlekse/status');
                         if (response.data.running) {
-                            this.processMessage = "Prosessen kjører...";
+                            this.processMessage = `Prosessen kjører... (${response.data.message})`;
                             this.loading = true;
                         } else {
-                            this.processMessage = "Prosessen er ferdig";
+                            this.processMessage = `Prosessen er ferdig (${response.data.message})`;
                             this.loading = false;
                             this.stopPolling();
                         }
                     } catch (error) {
                         console.error('Error polling status:', error);
-                        this.processMessage = "Feil ved sjekk av status";
+                        this.processMessage = `Feil ved sjekk av status: ${error.response?.data?.error || error.message}`;
                         this.loading = false;
                         this.stopPolling();
                     }

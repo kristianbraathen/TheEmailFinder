@@ -37,3 +37,8 @@ env.bak/
 venv.bak/
 
 App_Data/
+
+# Context and Docker files
+context.md
+Dockerfile
+.dockerignore

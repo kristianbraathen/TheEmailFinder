@@ -46,6 +46,30 @@ def stop_googlekse():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@trigger_webjobs.route('/googlekse/status', methods=['GET'])
+def status_googlekse():
+    try:
+        response = requests.get(
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/history",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+        )
+        
+        if response.status_code == 200:
+            history = response.json()
+            # Check if there's a recent run that's still running
+            if history and len(history) > 0:
+                latest_run = history[0]
+                return jsonify({
+                    'running': latest_run.get('status') == 'Running',
+                    'message': latest_run.get('status')
+                }), 200
+            return jsonify({'running': False, 'message': 'No recent runs'}), 200
+        else:
+            return jsonify({'error': f'Failed to get webjob status: {response.text}'}), response.status_code
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # KSE API endpoints
 @trigger_webjobs.route('/kseapi/start', methods=['POST'])
 def start_kseapi():
