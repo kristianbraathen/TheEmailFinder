@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_cors import CORS
 from sqlalchemy import text, Column, Integer, String, UniqueConstraint, DateTime
 from src.PyFiles.Db import db
@@ -46,4 +46,35 @@ def get_email_results():
         
         return jsonify(list(grouped_results.values())), 200
     except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@email_result_blueprint.route('/update_email', methods=['POST'])
+def update_email():
+    try:
+        data = request.get_json()
+        if not data or 'Org_nr' not in data or 'Firmanavn' not in data or 'email' not in data:
+            return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+        # Check if record exists
+        existing = db.session.query(EmailResult).filter_by(
+            Org_nr=data['Org_nr'],
+            email=data['email']
+        ).first()
+
+        if existing:
+            # Update existing record
+            existing.Firmanavn = data['Firmanavn']
+        else:
+            # Create new record
+            new_result = EmailResult(
+                Org_nr=data['Org_nr'],
+                Firmanavn=data['Firmanavn'],
+                email=data['email']
+            )
+            db.session.add(new_result)
+
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Email updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500 

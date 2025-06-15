@@ -122,11 +122,17 @@
             },
             async updateEmail(orgNr, email) {
                 try {
+                    const group = this.groupedResults.find(g => g.Org_nr === orgNr);
+                    if (!group) {
+                        throw new Error('Could not find organization');
+                    }
+
                     const response = await fetch('https://theemailfinder-d8ctecfsaab2a7fh.norwayeast-01.azurewebsites.net/SearchResultHandler/update_email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             Org_nr: orgNr,
+                            Firmanavn: group.Firmanavn,
                             email: email
                         })
                     });
