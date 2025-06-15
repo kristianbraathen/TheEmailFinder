@@ -81,9 +81,13 @@
                             emails: []
                         };
                     }
-                    // Add all emails without filtering, but check if email exists
-                    if (result.email && !map[key].emails.includes(result.email)) {
-                        map[key].emails.push(result.email);
+                    // Add all emails from the emails array
+                    if (result.emails && Array.isArray(result.emails)) {
+                        result.emails.forEach(email => {
+                            if (email && !map[key].emails.includes(email)) {
+                                map[key].emails.push(email);
+                            }
+                        });
                     }
                 });
                 return Object.values(map);
