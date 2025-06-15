@@ -54,17 +54,23 @@ def start_googlekse():
 @trigger_webjobs.route('/googlekse/stop', methods=['POST'])
 def stop_googlekse():
     try:
-        # Stop the webjob by sending a POST request to /run
+        # Get credentials from environment variables
+        username = os.getenv('WEBJOBS_USER')
+        password = os.getenv('WEBJOBS_PASS')
+        
+        # Azure WebJobs API endpoint for stopping the webjob
+        url = "https://theemailfinder-d8ctecfsaab2a7fh.scm.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/stop"
+        
+        # Send POST request to stop the webjob
         response = requests.post(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/run",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS),
-            json={"stop": True}
+            url,
+            auth=(username, password)
         )
         
         if response.status_code in [200, 202]:
-            return jsonify({'message': 'Stopped Google KSE webjob successfully'}), 200
+            return jsonify({'message': 'Webjob stop request sent successfully'}), 200
         else:
-            return jsonify({'error': f'Failed to stop webjob: {response.text}'}), response.status_code
+            return jsonify({'error': f'Failed to stop webjob. Status code: {response.status_code}'}), 500
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
