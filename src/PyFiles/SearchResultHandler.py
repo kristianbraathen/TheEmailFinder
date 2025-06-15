@@ -77,4 +77,20 @@ def update_email():
         return jsonify({"status": "success", "message": "Email updated successfully"}), 200
     except Exception as e:
         db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@email_result_blueprint.route('/delete_stored_result', methods=['POST'])
+def delete_stored_result():
+    try:
+        data = request.get_json()
+        if not data or 'org_nr' not in data:
+            return jsonify({"status": "error", "message": "Missing org_nr field"}), 400
+
+        # Delete all records for the given Org_nr
+        db.session.query(EmailResult).filter_by(Org_nr=data['org_nr']).delete()
+        db.session.commit()
+        
+        return jsonify({"status": "success", "message": "Records deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500 
