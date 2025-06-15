@@ -54,10 +54,11 @@ def start_googlekse():
 @trigger_webjobs.route('/googlekse/stop', methods=['POST'])
 def stop_googlekse():
     try:
-        # Stop the webjob using the Azure WebJobs API
+        # Stop the webjob by sending a POST request to /run
         response = requests.post(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/stop",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/run",
+            auth=(WEBJOBS_USER, WEBJOBS_PASS),
+            json={"stop": True}
         )
         
         if response.status_code in [200, 202]:
