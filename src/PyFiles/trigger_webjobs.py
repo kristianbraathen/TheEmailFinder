@@ -15,9 +15,16 @@ WEBJOBS_PASS = os.getenv('WEBJOBS_PASS')
 @trigger_webjobs.route('/googlekse/status', methods=['GET'])
 def status_googlekse():
     try:
+        # Get credentials from environment variables
+        username = os.getenv('WEBJOBS_USER')
+        password = os.getenv('WEBJOBS_PASS')
+        
+        # Azure WebJobs API endpoint for getting webjob status
+        url = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/history"
+        
         response = requests.get(
-            f"{WEBJOBS_BASE_URL}/webjobemailsearch-googlekse/history",
-            auth=(WEBJOBS_USER, WEBJOBS_PASS)
+            url,
+            auth=(username, password)
         )
         
         if response.status_code == 200:
@@ -30,7 +37,7 @@ def status_googlekse():
                 }), 200
             return jsonify({'running': False, 'message': 'No recent runs'}), 200
         else:
-            return jsonify({'error': f'Failed to get webjob status: {response.text}'}), response.status_code
+            return jsonify({'error': f'Failed to get webjob status. Status code: {response.status_code}'}), response.status_code
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -59,7 +66,7 @@ def stop_googlekse():
         password = os.getenv('WEBJOBS_PASS')
         
         # Azure WebJobs API endpoint for stopping the webjob
-        url = "https://theemailfinder-d8ctecfsaab2a7fh.scm.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/stop"
+        url = "https://theemailfinder-d8ctecfsaab2a7fh.scm.norwayeast-01.azurewebsites.net/api/triggeredwebjobs/webjobemailsearch-googlekse/stop"
         
         # Send POST request to stop the webjob
         response = requests.post(
