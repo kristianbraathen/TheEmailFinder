@@ -11,7 +11,6 @@ class EmailResult(db.Model):
     Org_nr = Column(String(255), nullable=False)
     Firmanavn = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
     __table_args__ = (
         UniqueConstraint('Org_nr', 'email', name='uix_org_nr_email'),
     )
